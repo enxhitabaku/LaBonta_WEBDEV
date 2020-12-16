@@ -1,0 +1,98 @@
+<html>
+<head>
+<title>srs.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #629755; font-style: italic;}
+.s4 { color: #808080;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+srs.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">from </span><span class="s1">django.contrib.gis.gdal </span><span class="s0">import </span><span class="s1">SpatialReference</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">from </span><span class="s1">django.db </span><span class="s0">import </span><span class="s1">DEFAULT_DB_ALIAS</span><span class="s0">, </span><span class="s1">connections</span>
+<a name="l3"><span class="ln">3    </span></a>
+<a name="l4"><span class="ln">4    </span></a>
+<a name="l5"><span class="ln">5    </span></a><span class="s0">def </span><span class="s1">add_srs_entry(srs</span><span class="s0">, </span><span class="s1">auth_name=</span><span class="s2">'EPSG'</span><span class="s0">, </span><span class="s1">auth_srid=</span><span class="s0">None, </span><span class="s1">ref_sys_name=</span><span class="s0">None,</span>
+<a name="l6"><span class="ln">6    </span></a>                  <span class="s1">database=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l7"><span class="ln">7    </span></a>    <span class="s3">&quot;&quot;&quot; 
+<a name="l8"><span class="ln">8    </span></a>    Take a GDAL SpatialReference system and add its information to the 
+<a name="l9"><span class="ln">9    </span></a>    `spatial_ref_sys` table of the spatial backend. Doing this enables 
+<a name="l10"><span class="ln">10   </span></a>    database-level spatial transformations for the backend.  Thus, this utility 
+<a name="l11"><span class="ln">11   </span></a>    is useful for adding spatial reference systems not included by default with 
+<a name="l12"><span class="ln">12   </span></a>    the backend: 
+<a name="l13"><span class="ln">13   </span></a> 
+<a name="l14"><span class="ln">14   </span></a>    &gt;&gt;&gt; from django.contrib.gis.utils import add_srs_entry 
+<a name="l15"><span class="ln">15   </span></a>    &gt;&gt;&gt; add_srs_entry(3857) 
+<a name="l16"><span class="ln">16   </span></a> 
+<a name="l17"><span class="ln">17   </span></a>    Keyword Arguments: 
+<a name="l18"><span class="ln">18   </span></a>     auth_name: 
+<a name="l19"><span class="ln">19   </span></a>       This keyword may be customized with the value of the `auth_name` field. 
+<a name="l20"><span class="ln">20   </span></a>       Defaults to 'EPSG'. 
+<a name="l21"><span class="ln">21   </span></a> 
+<a name="l22"><span class="ln">22   </span></a>     auth_srid: 
+<a name="l23"><span class="ln">23   </span></a>       This keyword may be customized with the value of the `auth_srid` field. 
+<a name="l24"><span class="ln">24   </span></a>       Defaults to the SRID determined by GDAL. 
+<a name="l25"><span class="ln">25   </span></a> 
+<a name="l26"><span class="ln">26   </span></a>     ref_sys_name: 
+<a name="l27"><span class="ln">27   </span></a>       For SpatiaLite users only, sets the value of the `ref_sys_name` field. 
+<a name="l28"><span class="ln">28   </span></a>       Defaults to the name determined by GDAL. 
+<a name="l29"><span class="ln">29   </span></a> 
+<a name="l30"><span class="ln">30   </span></a>     database: 
+<a name="l31"><span class="ln">31   </span></a>      The name of the database connection to use; the default is the value 
+<a name="l32"><span class="ln">32   </span></a>      of `django.db.DEFAULT_DB_ALIAS` (at the time of this writing, its value 
+<a name="l33"><span class="ln">33   </span></a>      is 'default'). 
+<a name="l34"><span class="ln">34   </span></a>    &quot;&quot;&quot;</span>
+<a name="l35"><span class="ln">35   </span></a>    <span class="s1">database = database </span><span class="s0">or </span><span class="s1">DEFAULT_DB_ALIAS</span>
+<a name="l36"><span class="ln">36   </span></a>    <span class="s1">connection = connections[database]</span>
+<a name="l37"><span class="ln">37   </span></a>
+<a name="l38"><span class="ln">38   </span></a>    <span class="s0">if not </span><span class="s1">hasattr(connection.ops</span><span class="s0">, </span><span class="s2">'spatial_version'</span><span class="s1">):</span>
+<a name="l39"><span class="ln">39   </span></a>        <span class="s0">raise </span><span class="s1">Exception(</span><span class="s2">'The `add_srs_entry` utility only works '</span>
+<a name="l40"><span class="ln">40   </span></a>                        <span class="s2">'with spatial backends.'</span><span class="s1">)</span>
+<a name="l41"><span class="ln">41   </span></a>    <span class="s0">if not </span><span class="s1">connection.features.supports_add_srs_entry:</span>
+<a name="l42"><span class="ln">42   </span></a>        <span class="s0">raise </span><span class="s1">Exception(</span><span class="s2">'This utility does not support your database backend.'</span><span class="s1">)</span>
+<a name="l43"><span class="ln">43   </span></a>    <span class="s1">SpatialRefSys = connection.ops.spatial_ref_sys()</span>
+<a name="l44"><span class="ln">44   </span></a>
+<a name="l45"><span class="ln">45   </span></a>    <span class="s4"># If argument is not a `SpatialReference` instance, use it as parameter</span>
+<a name="l46"><span class="ln">46   </span></a>    <span class="s4"># to construct a `SpatialReference` instance.</span>
+<a name="l47"><span class="ln">47   </span></a>    <span class="s0">if not </span><span class="s1">isinstance(srs</span><span class="s0">, </span><span class="s1">SpatialReference):</span>
+<a name="l48"><span class="ln">48   </span></a>        <span class="s1">srs = SpatialReference(srs)</span>
+<a name="l49"><span class="ln">49   </span></a>
+<a name="l50"><span class="ln">50   </span></a>    <span class="s0">if </span><span class="s1">srs.srid </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l51"><span class="ln">51   </span></a>        <span class="s0">raise </span><span class="s1">Exception(</span><span class="s2">'Spatial reference requires an SRID to be '</span>
+<a name="l52"><span class="ln">52   </span></a>                        <span class="s2">'compatible with the spatial backend.'</span><span class="s1">)</span>
+<a name="l53"><span class="ln">53   </span></a>
+<a name="l54"><span class="ln">54   </span></a>    <span class="s4"># Initializing the keyword arguments dictionary for both PostGIS</span>
+<a name="l55"><span class="ln">55   </span></a>    <span class="s4"># and SpatiaLite.</span>
+<a name="l56"><span class="ln">56   </span></a>    <span class="s1">kwargs = {</span>
+<a name="l57"><span class="ln">57   </span></a>        <span class="s2">'srid'</span><span class="s1">: srs.srid</span><span class="s0">,</span>
+<a name="l58"><span class="ln">58   </span></a>        <span class="s2">'auth_name'</span><span class="s1">: auth_name</span><span class="s0">,</span>
+<a name="l59"><span class="ln">59   </span></a>        <span class="s2">'auth_srid'</span><span class="s1">: auth_srid </span><span class="s0">or </span><span class="s1">srs.srid</span><span class="s0">,</span>
+<a name="l60"><span class="ln">60   </span></a>        <span class="s2">'proj4text'</span><span class="s1">: srs.proj4</span><span class="s0">,</span>
+<a name="l61"><span class="ln">61   </span></a>    <span class="s1">}</span>
+<a name="l62"><span class="ln">62   </span></a>    <span class="s4"># Backend-specific fields for the SpatialRefSys model.</span>
+<a name="l63"><span class="ln">63   </span></a>    <span class="s1">srs_field_names = {f.name </span><span class="s0">for </span><span class="s1">f </span><span class="s0">in </span><span class="s1">SpatialRefSys._meta.get_fields()}</span>
+<a name="l64"><span class="ln">64   </span></a>    <span class="s0">if </span><span class="s2">'srtext' </span><span class="s0">in </span><span class="s1">srs_field_names:</span>
+<a name="l65"><span class="ln">65   </span></a>        <span class="s1">kwargs[</span><span class="s2">'srtext'</span><span class="s1">] = srs.wkt</span>
+<a name="l66"><span class="ln">66   </span></a>    <span class="s0">if </span><span class="s2">'ref_sys_name' </span><span class="s0">in </span><span class="s1">srs_field_names:</span>
+<a name="l67"><span class="ln">67   </span></a>        <span class="s4"># SpatiaLite specific</span>
+<a name="l68"><span class="ln">68   </span></a>        <span class="s1">kwargs[</span><span class="s2">'ref_sys_name'</span><span class="s1">] = ref_sys_name </span><span class="s0">or </span><span class="s1">srs.name</span>
+<a name="l69"><span class="ln">69   </span></a>
+<a name="l70"><span class="ln">70   </span></a>    <span class="s4"># Creating the spatial_ref_sys model.</span>
+<a name="l71"><span class="ln">71   </span></a>    <span class="s0">try</span><span class="s1">:</span>
+<a name="l72"><span class="ln">72   </span></a>        <span class="s4"># Try getting via SRID only, because using all kwargs may</span>
+<a name="l73"><span class="ln">73   </span></a>        <span class="s4"># differ from exact wkt/proj in database.</span>
+<a name="l74"><span class="ln">74   </span></a>        <span class="s1">SpatialRefSys.objects.using(database).get(srid=srs.srid)</span>
+<a name="l75"><span class="ln">75   </span></a>    <span class="s0">except </span><span class="s1">SpatialRefSys.DoesNotExist:</span>
+<a name="l76"><span class="ln">76   </span></a>        <span class="s1">SpatialRefSys.objects.using(database).create(**kwargs)</span>
+<a name="l77"><span class="ln">77   </span></a></pre>
+</body>
+</html>

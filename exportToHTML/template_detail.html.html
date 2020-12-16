@@ -1,0 +1,50 @@
+<html>
+<head>
+<title>template_detail.html</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #a9b7c6;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #e8bf6a;}
+.s3 { color: #bababa;}
+.s4 { color: #a5c261;}
+.s5 { color: #6d9cbe;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+template_detail.html</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">{% extends &quot;admin/base_site.html&quot; %}</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">{% load i18n %}</span>
+<a name="l3"><span class="ln">3    </span></a>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">{% block breadcrumbs %}</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;breadcrumbs&quot;</span><span class="s2">&gt;</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url 'admin:index' %}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate 'Home' %}</span><span class="s2">&lt;/a&gt;</span>
+<a name="l7"><span class="ln">7    </span></a><span class="s5">&amp;rsaquo; </span><span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url 'django-admindocs-docroot' %}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate 'Documentation' %}</span><span class="s2">&lt;/a&gt;</span>
+<a name="l8"><span class="ln">8    </span></a><span class="s5">&amp;rsaquo; </span><span class="s0">{% translate 'Templates' %}</span>
+<a name="l9"><span class="ln">9    </span></a><span class="s5">&amp;rsaquo; </span><span class="s0">{{ name }}</span>
+<a name="l10"><span class="ln">10   </span></a><span class="s2">&lt;/div&gt;</span>
+<a name="l11"><span class="ln">11   </span></a><span class="s0">{% endblock %}</span>
+<a name="l12"><span class="ln">12   </span></a>
+<a name="l13"><span class="ln">13   </span></a><span class="s0">{% block title %}{% blocktranslate %}Template: {{ name }}{% endblocktranslate %}{% endblock %}</span>
+<a name="l14"><span class="ln">14   </span></a>
+<a name="l15"><span class="ln">15   </span></a><span class="s0">{% block content %}</span>
+<a name="l16"><span class="ln">16   </span></a><span class="s2">&lt;h1&gt;</span><span class="s0">{% blocktranslate %}Template: </span><span class="s2">&lt;q&gt;</span><span class="s0">{{ name }}</span><span class="s2">&lt;/q&gt;</span><span class="s0">{% endblocktranslate %}</span><span class="s2">&lt;/h1&gt;</span>
+<a name="l17"><span class="ln">17   </span></a>
+<a name="l18"><span class="ln">18   </span></a><span class="s0">{# Translators: Search is not a verb here, it qualifies path (a search path) #}</span>
+<a name="l19"><span class="ln">19   </span></a><span class="s2">&lt;h2&gt;</span><span class="s0">{% blocktranslate %}Search path for template </span><span class="s2">&lt;q&gt;</span><span class="s0">{{ name }}</span><span class="s2">&lt;/q&gt;</span><span class="s0">:{% endblocktranslate %}</span><span class="s2">&lt;/h2&gt;</span>
+<a name="l20"><span class="ln">20   </span></a><span class="s2">&lt;ol&gt;</span>
+<a name="l21"><span class="ln">21   </span></a><span class="s0">{% for template in templates|dictsort:&quot;order&quot; %}</span>
+<a name="l22"><span class="ln">22   </span></a>    <span class="s2">&lt;li&gt;&lt;code&gt;</span><span class="s0">{{ template.file }}</span><span class="s2">&lt;/code&gt;</span><span class="s0">{% if not template.exists %} </span><span class="s2">&lt;em&gt;</span><span class="s0">{% translate '(does not exist)' %}</span><span class="s2">&lt;/em&gt;</span><span class="s0">{% endif %}</span><span class="s2">&lt;/li&gt;</span>
+<a name="l23"><span class="ln">23   </span></a><span class="s0">{% endfor %}</span>
+<a name="l24"><span class="ln">24   </span></a><span class="s2">&lt;/ol&gt;</span>
+<a name="l25"><span class="ln">25   </span></a>
+<a name="l26"><span class="ln">26   </span></a><span class="s2">&lt;p </span><span class="s3">class</span><span class="s4">=&quot;small&quot;</span><span class="s2">&gt;&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url 'django-admindocs-docroot' %}&quot;</span><span class="s2">&gt;</span><span class="s5">&amp;lsaquo; </span><span class="s0">{% translate 'Back to Documentation' %}</span><span class="s2">&lt;/a&gt;&lt;/p&gt;</span>
+<a name="l27"><span class="ln">27   </span></a><span class="s0">{% endblock %}</span>
+<a name="l28"><span class="ln">28   </span></a></pre>
+</body>
+</html>

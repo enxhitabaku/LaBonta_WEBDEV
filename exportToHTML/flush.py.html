@@ -1,0 +1,103 @@
+<html>
+<head>
+<title>flush.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #808080;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+flush.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">from </span><span class="s1">importlib </span><span class="s0">import </span><span class="s1">import_module</span>
+<a name="l2"><span class="ln">2    </span></a>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">from </span><span class="s1">django.apps </span><span class="s0">import </span><span class="s1">apps</span>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">from </span><span class="s1">django.core.management.base </span><span class="s0">import </span><span class="s1">BaseCommand</span><span class="s0">, </span><span class="s1">CommandError</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s0">from </span><span class="s1">django.core.management.color </span><span class="s0">import </span><span class="s1">no_style</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s0">from </span><span class="s1">django.core.management.sql </span><span class="s0">import </span><span class="s1">emit_post_migrate_signal</span><span class="s0">, </span><span class="s1">sql_flush</span>
+<a name="l7"><span class="ln">7    </span></a><span class="s0">from </span><span class="s1">django.db </span><span class="s0">import </span><span class="s1">DEFAULT_DB_ALIAS</span><span class="s0">, </span><span class="s1">connections</span>
+<a name="l8"><span class="ln">8    </span></a>
+<a name="l9"><span class="ln">9    </span></a>
+<a name="l10"><span class="ln">10   </span></a><span class="s0">class </span><span class="s1">Command(BaseCommand):</span>
+<a name="l11"><span class="ln">11   </span></a>    <span class="s1">help = (</span>
+<a name="l12"><span class="ln">12   </span></a>        <span class="s2">'Removes ALL DATA from the database, including data added during '</span>
+<a name="l13"><span class="ln">13   </span></a>        <span class="s2">'migrations. Does not achieve a &quot;fresh install&quot; state.'</span>
+<a name="l14"><span class="ln">14   </span></a>    <span class="s1">)</span>
+<a name="l15"><span class="ln">15   </span></a>    <span class="s1">stealth_options = (</span><span class="s2">'reset_sequences'</span><span class="s0">, </span><span class="s2">'allow_cascade'</span><span class="s0">, </span><span class="s2">'inhibit_post_migrate'</span><span class="s1">)</span>
+<a name="l16"><span class="ln">16   </span></a>
+<a name="l17"><span class="ln">17   </span></a>    <span class="s0">def </span><span class="s1">add_arguments(self</span><span class="s0">, </span><span class="s1">parser):</span>
+<a name="l18"><span class="ln">18   </span></a>        <span class="s1">parser.add_argument(</span>
+<a name="l19"><span class="ln">19   </span></a>            <span class="s2">'--noinput'</span><span class="s0">, </span><span class="s2">'--no-input'</span><span class="s0">, </span><span class="s1">action=</span><span class="s2">'store_false'</span><span class="s0">, </span><span class="s1">dest=</span><span class="s2">'interactive'</span><span class="s0">,</span>
+<a name="l20"><span class="ln">20   </span></a>            <span class="s1">help=</span><span class="s2">'Tells Django to NOT prompt the user for input of any kind.'</span><span class="s0">,</span>
+<a name="l21"><span class="ln">21   </span></a>        <span class="s1">)</span>
+<a name="l22"><span class="ln">22   </span></a>        <span class="s1">parser.add_argument(</span>
+<a name="l23"><span class="ln">23   </span></a>            <span class="s2">'--database'</span><span class="s0">, </span><span class="s1">default=DEFAULT_DB_ALIAS</span><span class="s0">,</span>
+<a name="l24"><span class="ln">24   </span></a>            <span class="s1">help=</span><span class="s2">'Nominates a database to flush. Defaults to the &quot;default&quot; database.'</span><span class="s0">,</span>
+<a name="l25"><span class="ln">25   </span></a>        <span class="s1">)</span>
+<a name="l26"><span class="ln">26   </span></a>
+<a name="l27"><span class="ln">27   </span></a>    <span class="s0">def </span><span class="s1">handle(self</span><span class="s0">, </span><span class="s1">**options):</span>
+<a name="l28"><span class="ln">28   </span></a>        <span class="s1">database = options[</span><span class="s2">'database'</span><span class="s1">]</span>
+<a name="l29"><span class="ln">29   </span></a>        <span class="s1">connection = connections[database]</span>
+<a name="l30"><span class="ln">30   </span></a>        <span class="s1">verbosity = options[</span><span class="s2">'verbosity'</span><span class="s1">]</span>
+<a name="l31"><span class="ln">31   </span></a>        <span class="s1">interactive = options[</span><span class="s2">'interactive'</span><span class="s1">]</span>
+<a name="l32"><span class="ln">32   </span></a>        <span class="s3"># The following are stealth options used by Django's internals.</span>
+<a name="l33"><span class="ln">33   </span></a>        <span class="s1">reset_sequences = options.get(</span><span class="s2">'reset_sequences'</span><span class="s0">, True</span><span class="s1">)</span>
+<a name="l34"><span class="ln">34   </span></a>        <span class="s1">allow_cascade = options.get(</span><span class="s2">'allow_cascade'</span><span class="s0">, False</span><span class="s1">)</span>
+<a name="l35"><span class="ln">35   </span></a>        <span class="s1">inhibit_post_migrate = options.get(</span><span class="s2">'inhibit_post_migrate'</span><span class="s0">, False</span><span class="s1">)</span>
+<a name="l36"><span class="ln">36   </span></a>
+<a name="l37"><span class="ln">37   </span></a>        <span class="s1">self.style = no_style()</span>
+<a name="l38"><span class="ln">38   </span></a>
+<a name="l39"><span class="ln">39   </span></a>        <span class="s3"># Import the 'management' module within each installed app, to register</span>
+<a name="l40"><span class="ln">40   </span></a>        <span class="s3"># dispatcher events.</span>
+<a name="l41"><span class="ln">41   </span></a>        <span class="s0">for </span><span class="s1">app_config </span><span class="s0">in </span><span class="s1">apps.get_app_configs():</span>
+<a name="l42"><span class="ln">42   </span></a>            <span class="s0">try</span><span class="s1">:</span>
+<a name="l43"><span class="ln">43   </span></a>                <span class="s1">import_module(</span><span class="s2">'.management'</span><span class="s0">, </span><span class="s1">app_config.name)</span>
+<a name="l44"><span class="ln">44   </span></a>            <span class="s0">except </span><span class="s1">ImportError:</span>
+<a name="l45"><span class="ln">45   </span></a>                <span class="s0">pass</span>
+<a name="l46"><span class="ln">46   </span></a>
+<a name="l47"><span class="ln">47   </span></a>        <span class="s1">sql_list = sql_flush(self.style</span><span class="s0">, </span><span class="s1">connection</span><span class="s0">, </span><span class="s1">only_django=</span><span class="s0">True,</span>
+<a name="l48"><span class="ln">48   </span></a>                             <span class="s1">reset_sequences=reset_sequences</span><span class="s0">,</span>
+<a name="l49"><span class="ln">49   </span></a>                             <span class="s1">allow_cascade=allow_cascade)</span>
+<a name="l50"><span class="ln">50   </span></a>
+<a name="l51"><span class="ln">51   </span></a>        <span class="s0">if </span><span class="s1">interactive:</span>
+<a name="l52"><span class="ln">52   </span></a>            <span class="s1">confirm = input(</span><span class="s2">&quot;&quot;&quot;You have requested a flush of the database. 
+<a name="l53"><span class="ln">53   </span></a>This will IRREVERSIBLY DESTROY all data currently in the &quot;%s&quot; database, 
+<a name="l54"><span class="ln">54   </span></a>and return each table to an empty state. 
+<a name="l55"><span class="ln">55   </span></a>Are you sure you want to do this? 
+<a name="l56"><span class="ln">56   </span></a> 
+<a name="l57"><span class="ln">57   </span></a>    Type 'yes' to continue, or 'no' to cancel: &quot;&quot;&quot; </span><span class="s1">% connection.settings_dict[</span><span class="s2">'NAME'</span><span class="s1">])</span>
+<a name="l58"><span class="ln">58   </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l59"><span class="ln">59   </span></a>            <span class="s1">confirm = </span><span class="s2">'yes'</span>
+<a name="l60"><span class="ln">60   </span></a>
+<a name="l61"><span class="ln">61   </span></a>        <span class="s0">if </span><span class="s1">confirm == </span><span class="s2">'yes'</span><span class="s1">:</span>
+<a name="l62"><span class="ln">62   </span></a>            <span class="s0">try</span><span class="s1">:</span>
+<a name="l63"><span class="ln">63   </span></a>                <span class="s1">connection.ops.execute_sql_flush(sql_list)</span>
+<a name="l64"><span class="ln">64   </span></a>            <span class="s0">except </span><span class="s1">Exception </span><span class="s0">as </span><span class="s1">exc:</span>
+<a name="l65"><span class="ln">65   </span></a>                <span class="s0">raise </span><span class="s1">CommandError(</span>
+<a name="l66"><span class="ln">66   </span></a>                    <span class="s2">&quot;Database %s couldn't be flushed. Possible reasons:</span><span class="s0">\n</span><span class="s2">&quot;</span>
+<a name="l67"><span class="ln">67   </span></a>                    <span class="s2">&quot;  * The database isn't running or isn't configured correctly.</span><span class="s0">\n</span><span class="s2">&quot;</span>
+<a name="l68"><span class="ln">68   </span></a>                    <span class="s2">&quot;  * At least one of the expected database tables doesn't exist.</span><span class="s0">\n</span><span class="s2">&quot;</span>
+<a name="l69"><span class="ln">69   </span></a>                    <span class="s2">&quot;  * The SQL was invalid.</span><span class="s0">\n</span><span class="s2">&quot;</span>
+<a name="l70"><span class="ln">70   </span></a>                    <span class="s2">&quot;Hint: Look at the output of 'django-admin sqlflush'. &quot;</span>
+<a name="l71"><span class="ln">71   </span></a>                    <span class="s2">&quot;That's the SQL this command wasn't able to run.&quot; </span><span class="s1">% (</span>
+<a name="l72"><span class="ln">72   </span></a>                        <span class="s1">connection.settings_dict[</span><span class="s2">'NAME'</span><span class="s1">]</span><span class="s0">,</span>
+<a name="l73"><span class="ln">73   </span></a>                    <span class="s1">)</span>
+<a name="l74"><span class="ln">74   </span></a>                <span class="s1">) </span><span class="s0">from </span><span class="s1">exc</span>
+<a name="l75"><span class="ln">75   </span></a>
+<a name="l76"><span class="ln">76   </span></a>            <span class="s3"># Empty sql_list may signify an empty database and post_migrate would then crash</span>
+<a name="l77"><span class="ln">77   </span></a>            <span class="s0">if </span><span class="s1">sql_list </span><span class="s0">and not </span><span class="s1">inhibit_post_migrate:</span>
+<a name="l78"><span class="ln">78   </span></a>                <span class="s3"># Emit the post migrate signal. This allows individual applications to</span>
+<a name="l79"><span class="ln">79   </span></a>                <span class="s3"># respond as if the database had been migrated from scratch.</span>
+<a name="l80"><span class="ln">80   </span></a>                <span class="s1">emit_post_migrate_signal(verbosity</span><span class="s0">, </span><span class="s1">interactive</span><span class="s0">, </span><span class="s1">database)</span>
+<a name="l81"><span class="ln">81   </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l82"><span class="ln">82   </span></a>            <span class="s1">self.stdout.write(</span><span class="s2">'Flush cancelled.'</span><span class="s1">)</span>
+<a name="l83"><span class="ln">83   </span></a></pre>
+</body>
+</html>

@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/work_with_us.css' %}">
+
+    <!--AOS-->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <!--Font Style-->
+    <link href='https://fonts.googleapis.com/css?family=Montserrat|Patua|Cormorant Garamond|Gabriela|Permanent Marker' rel='stylesheet'>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+{#    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&display=swap" rel="stylesheet">#}
+{#    <link href='https://fonts.googleapis.com/css?family=Patua One' rel='stylesheet'>#}
+{#    <link href='https://fonts.googleapis.com/css?family=Cormorant Garamond' rel='stylesheet'>#}
+{#    <link href='https://fonts.googleapis.com/css?family=Gabriela' rel='stylesheet'>#}
+
+    <!--Font Awesome ICONs-->
+{#    <script src="https://use.fontawesome.com/6eb17e02f3.js"></script>#}
+{#    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">#}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script>//Create cookie CRSF TOKEN for Ajax Call
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+    </script>
+
+
+    <!--Title & Logo-->
+    <link rel="icon" href="{% static 'img/LogoLaBonta.ico' %}" type="ico">
+    <title>La Bonta</title>
+
+</head>
+
+<body>
+  <!--Navigation Bar-->
+  <nav class="navbar navbar-default navbar-fixed-top main-nav">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle " data-toggle="collapse" data-target="#myNavbar">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+            <a class="navbar-brand fontLogo" a href="#home" onclick="location.href='{% url 'home' %}'" style="font-family: 'Permanent Marker',handwriting;">La Bonta</a>
+      </div> <!-class="navbar-header"->
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav optList">
+                <li class="active"><a href="#home" onclick="location.href='{% url 'home' %}'" class="nav_home">Home</a></li>
+                <li><a href="#about" onclick="location.href='{% url 'about' %}'" class="nav_about">About</a></li>
+                <li><a href="#booking" onclick="location.href='{% url 'booking' %}'" class="nav_booking">Booking</a></li>
+                <li><a href="#menu" onclick="location.href='{% url 'menu' %}'" class="nav_menu">Menu</a></li>
+                <li><a href="work" class="nav_work">Work With Us</a></li>
+                <li><a href="#contact" onclick="location.href='{% url 'contact' %}'" class="nav_contact">Contact</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right langList">
+                <li><a href="#" data-language="italian">IT</a></li>
+                <li><a href="#" data-language="albanian">AL</a></li>
+                <li><a href="#" data-language="english">EN</a></li>
+            </ul>
+        </div><!-- id="myNavbar"-->
+    </div><!-- class="container-fluid"-->
+  </nav>
+
+  <div class="relative">
+         <div class='header-overlay'>
+        </div>
+    <div class="section-header fixed-section">
+        <!--Main Carrousel Photos-->
+        <div class="container">
+          <div id="mainCarousel" class="carousel slide" data-ride="carousel" data-interval="1500">
+            <!-- Indicators Removed-->
+            <!-- Wrapper for slides -->
+            <div class="carousel-inner">
+              <div class="item active n">
+                <img src="{% static 'img/fotoProve.jpg' %}" style="width:100%;">
+              </div>
+
+              <div class="item">
+                <img src="{% static 'img/fotoProve.jpg' %}"  style="width:100%;">
+              </div>
+
+            </div>
+            <!-- Left and right controls Removed -->
+          </div>
+        </div>
+
+    </div>
+  </div>
+
+<div class="section-jobs section">
+    <h1>THIS IS A TEXT JOB SECTION</h1>
+    <span id="bottom">Bottom</span>
+</div>
+<div class="toBeHidden">
+
+</div>
+<div class="section-footer section">
+    <div class="fixed-footer">
+        <h1>Fixed Footer</h1>
+    </div>
+</div>
+{#<div class="fixed-section">#}
+{##}
+{#</div>#}
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript" src="{% static 'js/work_with_usJS.js' %}"></script>
+
+</body>
+</html>

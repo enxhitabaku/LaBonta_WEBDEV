@@ -1,0 +1,374 @@
+<html>
+<head>
+<title>regex_helper.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #629755; font-style: italic;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #808080;}
+.s4 { color: #6a8759;}
+.s5 { color: #6897bb;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+regex_helper.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">&quot;&quot;&quot; 
+<a name="l2"><span class="ln">2    </span></a>Functions for reversing a regular expression (used in reverse URL resolving). 
+<a name="l3"><span class="ln">3    </span></a>Used internally by Django and not intended for external use. 
+<a name="l4"><span class="ln">4    </span></a> 
+<a name="l5"><span class="ln">5    </span></a>This is not, and is not intended to be, a complete reg-exp decompiler. It 
+<a name="l6"><span class="ln">6    </span></a>should be good enough for a large class of URLS, however. 
+<a name="l7"><span class="ln">7    </span></a>&quot;&quot;&quot;</span>
+<a name="l8"><span class="ln">8    </span></a><span class="s2">import </span><span class="s1">re</span>
+<a name="l9"><span class="ln">9    </span></a>
+<a name="l10"><span class="ln">10   </span></a><span class="s2">from </span><span class="s1">django.utils.functional </span><span class="s2">import </span><span class="s1">SimpleLazyObject</span>
+<a name="l11"><span class="ln">11   </span></a>
+<a name="l12"><span class="ln">12   </span></a><span class="s3"># Mapping of an escape character to a representative of that class. So, e.g.,</span>
+<a name="l13"><span class="ln">13   </span></a><span class="s3"># &quot;\w&quot; is replaced by &quot;x&quot; in a reverse URL. A value of None means to ignore</span>
+<a name="l14"><span class="ln">14   </span></a><span class="s3"># this sequence. Any missing key is mapped to itself.</span>
+<a name="l15"><span class="ln">15   </span></a><span class="s1">ESCAPE_MAPPINGS = {</span>
+<a name="l16"><span class="ln">16   </span></a>    <span class="s4">&quot;A&quot;</span><span class="s1">: </span><span class="s2">None,</span>
+<a name="l17"><span class="ln">17   </span></a>    <span class="s4">&quot;b&quot;</span><span class="s1">: </span><span class="s2">None,</span>
+<a name="l18"><span class="ln">18   </span></a>    <span class="s4">&quot;B&quot;</span><span class="s1">: </span><span class="s2">None,</span>
+<a name="l19"><span class="ln">19   </span></a>    <span class="s4">&quot;d&quot;</span><span class="s1">: </span><span class="s4">&quot;0&quot;</span><span class="s2">,</span>
+<a name="l20"><span class="ln">20   </span></a>    <span class="s4">&quot;D&quot;</span><span class="s1">: </span><span class="s4">&quot;x&quot;</span><span class="s2">,</span>
+<a name="l21"><span class="ln">21   </span></a>    <span class="s4">&quot;s&quot;</span><span class="s1">: </span><span class="s4">&quot; &quot;</span><span class="s2">,</span>
+<a name="l22"><span class="ln">22   </span></a>    <span class="s4">&quot;S&quot;</span><span class="s1">: </span><span class="s4">&quot;x&quot;</span><span class="s2">,</span>
+<a name="l23"><span class="ln">23   </span></a>    <span class="s4">&quot;w&quot;</span><span class="s1">: </span><span class="s4">&quot;x&quot;</span><span class="s2">,</span>
+<a name="l24"><span class="ln">24   </span></a>    <span class="s4">&quot;W&quot;</span><span class="s1">: </span><span class="s4">&quot;!&quot;</span><span class="s2">,</span>
+<a name="l25"><span class="ln">25   </span></a>    <span class="s4">&quot;Z&quot;</span><span class="s1">: </span><span class="s2">None,</span>
+<a name="l26"><span class="ln">26   </span></a><span class="s1">}</span>
+<a name="l27"><span class="ln">27   </span></a>
+<a name="l28"><span class="ln">28   </span></a>
+<a name="l29"><span class="ln">29   </span></a><span class="s2">class </span><span class="s1">Choice(list):</span>
+<a name="l30"><span class="ln">30   </span></a>    <span class="s0">&quot;&quot;&quot;Represent multiple possibilities at this point in a pattern string.&quot;&quot;&quot;</span>
+<a name="l31"><span class="ln">31   </span></a>
+<a name="l32"><span class="ln">32   </span></a>
+<a name="l33"><span class="ln">33   </span></a><span class="s2">class </span><span class="s1">Group(list):</span>
+<a name="l34"><span class="ln">34   </span></a>    <span class="s0">&quot;&quot;&quot;Represent a capturing group in the pattern string.&quot;&quot;&quot;</span>
+<a name="l35"><span class="ln">35   </span></a>
+<a name="l36"><span class="ln">36   </span></a>
+<a name="l37"><span class="ln">37   </span></a><span class="s2">class </span><span class="s1">NonCapture(list):</span>
+<a name="l38"><span class="ln">38   </span></a>    <span class="s0">&quot;&quot;&quot;Represent a non-capturing group in the pattern string.&quot;&quot;&quot;</span>
+<a name="l39"><span class="ln">39   </span></a>
+<a name="l40"><span class="ln">40   </span></a>
+<a name="l41"><span class="ln">41   </span></a><span class="s2">def </span><span class="s1">normalize(pattern):</span>
+<a name="l42"><span class="ln">42   </span></a>    <span class="s0">r&quot;&quot;&quot; 
+<a name="l43"><span class="ln">43   </span></a>    Given a reg-exp pattern, normalize it to an iterable of forms that 
+<a name="l44"><span class="ln">44   </span></a>    suffice for reverse matching. This does the following: 
+<a name="l45"><span class="ln">45   </span></a> 
+<a name="l46"><span class="ln">46   </span></a>    (1) For any repeating sections, keeps the minimum number of occurrences 
+<a name="l47"><span class="ln">47   </span></a>        permitted (this means zero for optional groups). 
+<a name="l48"><span class="ln">48   </span></a>    (2) If an optional group includes parameters, include one occurrence of 
+<a name="l49"><span class="ln">49   </span></a>        that group (along with the zero occurrence case from step (1)). 
+<a name="l50"><span class="ln">50   </span></a>    (3) Select the first (essentially an arbitrary) element from any character 
+<a name="l51"><span class="ln">51   </span></a>        class. Select an arbitrary character for any unordered class (e.g. '.' 
+<a name="l52"><span class="ln">52   </span></a>        or '\w') in the pattern. 
+<a name="l53"><span class="ln">53   </span></a>    (4) Ignore look-ahead and look-behind assertions. 
+<a name="l54"><span class="ln">54   </span></a>    (5) Raise an error on any disjunctive ('|') constructs. 
+<a name="l55"><span class="ln">55   </span></a> 
+<a name="l56"><span class="ln">56   </span></a>    Django's URLs for forward resolving are either all positional arguments or 
+<a name="l57"><span class="ln">57   </span></a>    all keyword arguments. That is assumed here, as well. Although reverse 
+<a name="l58"><span class="ln">58   </span></a>    resolving can be done using positional args when keyword args are 
+<a name="l59"><span class="ln">59   </span></a>    specified, the two cannot be mixed in the same reverse() call. 
+<a name="l60"><span class="ln">60   </span></a>    &quot;&quot;&quot;</span>
+<a name="l61"><span class="ln">61   </span></a>    <span class="s3"># Do a linear scan to work out the special features of this pattern. The</span>
+<a name="l62"><span class="ln">62   </span></a>    <span class="s3"># idea is that we scan once here and collect all the information we need to</span>
+<a name="l63"><span class="ln">63   </span></a>    <span class="s3"># make future decisions.</span>
+<a name="l64"><span class="ln">64   </span></a>    <span class="s1">result = []</span>
+<a name="l65"><span class="ln">65   </span></a>    <span class="s1">non_capturing_groups = []</span>
+<a name="l66"><span class="ln">66   </span></a>    <span class="s1">consume_next = </span><span class="s2">True</span>
+<a name="l67"><span class="ln">67   </span></a>    <span class="s1">pattern_iter = next_char(iter(pattern))</span>
+<a name="l68"><span class="ln">68   </span></a>    <span class="s1">num_args = </span><span class="s5">0</span>
+<a name="l69"><span class="ln">69   </span></a>
+<a name="l70"><span class="ln">70   </span></a>    <span class="s3"># A &quot;while&quot; loop is used here because later on we need to be able to peek</span>
+<a name="l71"><span class="ln">71   </span></a>    <span class="s3"># at the next character and possibly go around without consuming another</span>
+<a name="l72"><span class="ln">72   </span></a>    <span class="s3"># one at the top of the loop.</span>
+<a name="l73"><span class="ln">73   </span></a>    <span class="s2">try</span><span class="s1">:</span>
+<a name="l74"><span class="ln">74   </span></a>        <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l75"><span class="ln">75   </span></a>    <span class="s2">except </span><span class="s1">StopIteration:</span>
+<a name="l76"><span class="ln">76   </span></a>        <span class="s2">return </span><span class="s1">[(</span><span class="s4">''</span><span class="s2">, </span><span class="s1">[])]</span>
+<a name="l77"><span class="ln">77   </span></a>
+<a name="l78"><span class="ln">78   </span></a>    <span class="s2">try</span><span class="s1">:</span>
+<a name="l79"><span class="ln">79   </span></a>        <span class="s2">while True</span><span class="s1">:</span>
+<a name="l80"><span class="ln">80   </span></a>            <span class="s2">if </span><span class="s1">escaped:</span>
+<a name="l81"><span class="ln">81   </span></a>                <span class="s1">result.append(ch)</span>
+<a name="l82"><span class="ln">82   </span></a>            <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">'.'</span><span class="s1">:</span>
+<a name="l83"><span class="ln">83   </span></a>                <span class="s3"># Replace &quot;any character&quot; with an arbitrary representative.</span>
+<a name="l84"><span class="ln">84   </span></a>                <span class="s1">result.append(</span><span class="s4">&quot;.&quot;</span><span class="s1">)</span>
+<a name="l85"><span class="ln">85   </span></a>            <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">'|'</span><span class="s1">:</span>
+<a name="l86"><span class="ln">86   </span></a>                <span class="s3"># FIXME: One day we'll should do this, but not in 1.0.</span>
+<a name="l87"><span class="ln">87   </span></a>                <span class="s2">raise </span><span class="s1">NotImplementedError(</span><span class="s4">'Awaiting Implementation'</span><span class="s1">)</span>
+<a name="l88"><span class="ln">88   </span></a>            <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">&quot;^&quot;</span><span class="s1">:</span>
+<a name="l89"><span class="ln">89   </span></a>                <span class="s2">pass</span>
+<a name="l90"><span class="ln">90   </span></a>            <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">'$'</span><span class="s1">:</span>
+<a name="l91"><span class="ln">91   </span></a>                <span class="s2">break</span>
+<a name="l92"><span class="ln">92   </span></a>            <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">')'</span><span class="s1">:</span>
+<a name="l93"><span class="ln">93   </span></a>                <span class="s3"># This can only be the end of a non-capturing group, since all</span>
+<a name="l94"><span class="ln">94   </span></a>                <span class="s3"># other unescaped parentheses are handled by the grouping</span>
+<a name="l95"><span class="ln">95   </span></a>                <span class="s3"># section later (and the full group is handled there).</span>
+<a name="l96"><span class="ln">96   </span></a>                <span class="s3">#</span>
+<a name="l97"><span class="ln">97   </span></a>                <span class="s3"># We regroup everything inside the capturing group so that it</span>
+<a name="l98"><span class="ln">98   </span></a>                <span class="s3"># can be quantified, if necessary.</span>
+<a name="l99"><span class="ln">99   </span></a>                <span class="s1">start = non_capturing_groups.pop()</span>
+<a name="l100"><span class="ln">100  </span></a>                <span class="s1">inner = NonCapture(result[start:])</span>
+<a name="l101"><span class="ln">101  </span></a>                <span class="s1">result = result[:start] + [inner]</span>
+<a name="l102"><span class="ln">102  </span></a>            <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">'['</span><span class="s1">:</span>
+<a name="l103"><span class="ln">103  </span></a>                <span class="s3"># Replace ranges with the first character in the range.</span>
+<a name="l104"><span class="ln">104  </span></a>                <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l105"><span class="ln">105  </span></a>                <span class="s1">result.append(ch)</span>
+<a name="l106"><span class="ln">106  </span></a>                <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l107"><span class="ln">107  </span></a>                <span class="s2">while </span><span class="s1">escaped </span><span class="s2">or </span><span class="s1">ch != </span><span class="s4">']'</span><span class="s1">:</span>
+<a name="l108"><span class="ln">108  </span></a>                    <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l109"><span class="ln">109  </span></a>            <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">'('</span><span class="s1">:</span>
+<a name="l110"><span class="ln">110  </span></a>                <span class="s3"># Some kind of group.</span>
+<a name="l111"><span class="ln">111  </span></a>                <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l112"><span class="ln">112  </span></a>                <span class="s2">if </span><span class="s1">ch != </span><span class="s4">'?' </span><span class="s2">or </span><span class="s1">escaped:</span>
+<a name="l113"><span class="ln">113  </span></a>                    <span class="s3"># A positional group</span>
+<a name="l114"><span class="ln">114  </span></a>                    <span class="s1">name = </span><span class="s4">&quot;_%d&quot; </span><span class="s1">% num_args</span>
+<a name="l115"><span class="ln">115  </span></a>                    <span class="s1">num_args += </span><span class="s5">1</span>
+<a name="l116"><span class="ln">116  </span></a>                    <span class="s1">result.append(Group(((</span><span class="s4">&quot;%%(%s)s&quot; </span><span class="s1">% name)</span><span class="s2">, </span><span class="s1">name)))</span>
+<a name="l117"><span class="ln">117  </span></a>                    <span class="s1">walk_to_end(ch</span><span class="s2">, </span><span class="s1">pattern_iter)</span>
+<a name="l118"><span class="ln">118  </span></a>                <span class="s2">else</span><span class="s1">:</span>
+<a name="l119"><span class="ln">119  </span></a>                    <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l120"><span class="ln">120  </span></a>                    <span class="s2">if </span><span class="s1">ch </span><span class="s2">in </span><span class="s4">'!=&lt;'</span><span class="s1">:</span>
+<a name="l121"><span class="ln">121  </span></a>                        <span class="s3"># All of these are ignorable. Walk to the end of the</span>
+<a name="l122"><span class="ln">122  </span></a>                        <span class="s3"># group.</span>
+<a name="l123"><span class="ln">123  </span></a>                        <span class="s1">walk_to_end(ch</span><span class="s2">, </span><span class="s1">pattern_iter)</span>
+<a name="l124"><span class="ln">124  </span></a>                    <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">':'</span><span class="s1">:</span>
+<a name="l125"><span class="ln">125  </span></a>                        <span class="s3"># Non-capturing group</span>
+<a name="l126"><span class="ln">126  </span></a>                        <span class="s1">non_capturing_groups.append(len(result))</span>
+<a name="l127"><span class="ln">127  </span></a>                    <span class="s2">elif </span><span class="s1">ch != </span><span class="s4">'P'</span><span class="s1">:</span>
+<a name="l128"><span class="ln">128  </span></a>                        <span class="s3"># Anything else, other than a named group, is something</span>
+<a name="l129"><span class="ln">129  </span></a>                        <span class="s3"># we cannot reverse.</span>
+<a name="l130"><span class="ln">130  </span></a>                        <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s4">&quot;Non-reversible reg-exp portion: '(?%s'&quot; </span><span class="s1">% ch)</span>
+<a name="l131"><span class="ln">131  </span></a>                    <span class="s2">else</span><span class="s1">:</span>
+<a name="l132"><span class="ln">132  </span></a>                        <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l133"><span class="ln">133  </span></a>                        <span class="s2">if </span><span class="s1">ch </span><span class="s2">not in </span><span class="s1">(</span><span class="s4">'&lt;'</span><span class="s2">, </span><span class="s4">'='</span><span class="s1">):</span>
+<a name="l134"><span class="ln">134  </span></a>                            <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s4">&quot;Non-reversible reg-exp portion: '(?P%s'&quot; </span><span class="s1">% ch)</span>
+<a name="l135"><span class="ln">135  </span></a>                        <span class="s3"># We are in a named capturing group. Extra the name and</span>
+<a name="l136"><span class="ln">136  </span></a>                        <span class="s3"># then skip to the end.</span>
+<a name="l137"><span class="ln">137  </span></a>                        <span class="s2">if </span><span class="s1">ch == </span><span class="s4">'&lt;'</span><span class="s1">:</span>
+<a name="l138"><span class="ln">138  </span></a>                            <span class="s1">terminal_char = </span><span class="s4">'&gt;'</span>
+<a name="l139"><span class="ln">139  </span></a>                        <span class="s3"># We are in a named backreference.</span>
+<a name="l140"><span class="ln">140  </span></a>                        <span class="s2">else</span><span class="s1">:</span>
+<a name="l141"><span class="ln">141  </span></a>                            <span class="s1">terminal_char = </span><span class="s4">')'</span>
+<a name="l142"><span class="ln">142  </span></a>                        <span class="s1">name = []</span>
+<a name="l143"><span class="ln">143  </span></a>                        <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l144"><span class="ln">144  </span></a>                        <span class="s2">while </span><span class="s1">ch != terminal_char:</span>
+<a name="l145"><span class="ln">145  </span></a>                            <span class="s1">name.append(ch)</span>
+<a name="l146"><span class="ln">146  </span></a>                            <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l147"><span class="ln">147  </span></a>                        <span class="s1">param = </span><span class="s4">''</span><span class="s1">.join(name)</span>
+<a name="l148"><span class="ln">148  </span></a>                        <span class="s3"># Named backreferences have already consumed the</span>
+<a name="l149"><span class="ln">149  </span></a>                        <span class="s3"># parenthesis.</span>
+<a name="l150"><span class="ln">150  </span></a>                        <span class="s2">if </span><span class="s1">terminal_char != </span><span class="s4">')'</span><span class="s1">:</span>
+<a name="l151"><span class="ln">151  </span></a>                            <span class="s1">result.append(Group(((</span><span class="s4">&quot;%%(%s)s&quot; </span><span class="s1">% param)</span><span class="s2">, </span><span class="s1">param)))</span>
+<a name="l152"><span class="ln">152  </span></a>                            <span class="s1">walk_to_end(ch</span><span class="s2">, </span><span class="s1">pattern_iter)</span>
+<a name="l153"><span class="ln">153  </span></a>                        <span class="s2">else</span><span class="s1">:</span>
+<a name="l154"><span class="ln">154  </span></a>                            <span class="s1">result.append(Group(((</span><span class="s4">&quot;%%(%s)s&quot; </span><span class="s1">% param)</span><span class="s2">, None</span><span class="s1">)))</span>
+<a name="l155"><span class="ln">155  </span></a>            <span class="s2">elif </span><span class="s1">ch </span><span class="s2">in </span><span class="s4">&quot;*?+{&quot;</span><span class="s1">:</span>
+<a name="l156"><span class="ln">156  </span></a>                <span class="s3"># Quantifiers affect the previous item in the result list.</span>
+<a name="l157"><span class="ln">157  </span></a>                <span class="s1">count</span><span class="s2">, </span><span class="s1">ch = get_quantifier(ch</span><span class="s2">, </span><span class="s1">pattern_iter)</span>
+<a name="l158"><span class="ln">158  </span></a>                <span class="s2">if </span><span class="s1">ch:</span>
+<a name="l159"><span class="ln">159  </span></a>                    <span class="s3"># We had to look ahead, but it wasn't need to compute the</span>
+<a name="l160"><span class="ln">160  </span></a>                    <span class="s3"># quantifier, so use this character next time around the</span>
+<a name="l161"><span class="ln">161  </span></a>                    <span class="s3"># main loop.</span>
+<a name="l162"><span class="ln">162  </span></a>                    <span class="s1">consume_next = </span><span class="s2">False</span>
+<a name="l163"><span class="ln">163  </span></a>
+<a name="l164"><span class="ln">164  </span></a>                <span class="s2">if </span><span class="s1">count == </span><span class="s5">0</span><span class="s1">:</span>
+<a name="l165"><span class="ln">165  </span></a>                    <span class="s2">if </span><span class="s1">contains(result[-</span><span class="s5">1</span><span class="s1">]</span><span class="s2">, </span><span class="s1">Group):</span>
+<a name="l166"><span class="ln">166  </span></a>                        <span class="s3"># If we are quantifying a capturing group (or</span>
+<a name="l167"><span class="ln">167  </span></a>                        <span class="s3"># something containing such a group) and the minimum is</span>
+<a name="l168"><span class="ln">168  </span></a>                        <span class="s3"># zero, we must also handle the case of one occurrence</span>
+<a name="l169"><span class="ln">169  </span></a>                        <span class="s3"># being present. All the quantifiers (except {0,0},</span>
+<a name="l170"><span class="ln">170  </span></a>                        <span class="s3"># which we conveniently ignore) that have a 0 minimum</span>
+<a name="l171"><span class="ln">171  </span></a>                        <span class="s3"># also allow a single occurrence.</span>
+<a name="l172"><span class="ln">172  </span></a>                        <span class="s1">result[-</span><span class="s5">1</span><span class="s1">] = Choice([</span><span class="s2">None, </span><span class="s1">result[-</span><span class="s5">1</span><span class="s1">]])</span>
+<a name="l173"><span class="ln">173  </span></a>                    <span class="s2">else</span><span class="s1">:</span>
+<a name="l174"><span class="ln">174  </span></a>                        <span class="s1">result.pop()</span>
+<a name="l175"><span class="ln">175  </span></a>                <span class="s2">elif </span><span class="s1">count &gt; </span><span class="s5">1</span><span class="s1">:</span>
+<a name="l176"><span class="ln">176  </span></a>                    <span class="s1">result.extend([result[-</span><span class="s5">1</span><span class="s1">]] * (count - </span><span class="s5">1</span><span class="s1">))</span>
+<a name="l177"><span class="ln">177  </span></a>            <span class="s2">else</span><span class="s1">:</span>
+<a name="l178"><span class="ln">178  </span></a>                <span class="s3"># Anything else is a literal.</span>
+<a name="l179"><span class="ln">179  </span></a>                <span class="s1">result.append(ch)</span>
+<a name="l180"><span class="ln">180  </span></a>
+<a name="l181"><span class="ln">181  </span></a>            <span class="s2">if </span><span class="s1">consume_next:</span>
+<a name="l182"><span class="ln">182  </span></a>                <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(pattern_iter)</span>
+<a name="l183"><span class="ln">183  </span></a>            <span class="s1">consume_next = </span><span class="s2">True</span>
+<a name="l184"><span class="ln">184  </span></a>    <span class="s2">except </span><span class="s1">StopIteration:</span>
+<a name="l185"><span class="ln">185  </span></a>        <span class="s2">pass</span>
+<a name="l186"><span class="ln">186  </span></a>    <span class="s2">except </span><span class="s1">NotImplementedError:</span>
+<a name="l187"><span class="ln">187  </span></a>        <span class="s3"># A case of using the disjunctive form. No results for you!</span>
+<a name="l188"><span class="ln">188  </span></a>        <span class="s2">return </span><span class="s1">[(</span><span class="s4">''</span><span class="s2">, </span><span class="s1">[])]</span>
+<a name="l189"><span class="ln">189  </span></a>
+<a name="l190"><span class="ln">190  </span></a>    <span class="s2">return </span><span class="s1">list(zip(*flatten_result(result)))</span>
+<a name="l191"><span class="ln">191  </span></a>
+<a name="l192"><span class="ln">192  </span></a>
+<a name="l193"><span class="ln">193  </span></a><span class="s2">def </span><span class="s1">next_char(input_iter):</span>
+<a name="l194"><span class="ln">194  </span></a>    <span class="s0">r&quot;&quot;&quot; 
+<a name="l195"><span class="ln">195  </span></a>    An iterator that yields the next character from &quot;pattern_iter&quot;, respecting 
+<a name="l196"><span class="ln">196  </span></a>    escape sequences. An escaped character is replaced by a representative of 
+<a name="l197"><span class="ln">197  </span></a>    its class (e.g. \w -&gt; &quot;x&quot;). If the escaped character is one that is 
+<a name="l198"><span class="ln">198  </span></a>    skipped, it is not returned (the next character is returned instead). 
+<a name="l199"><span class="ln">199  </span></a> 
+<a name="l200"><span class="ln">200  </span></a>    Yield the next character, along with a boolean indicating whether it is a 
+<a name="l201"><span class="ln">201  </span></a>    raw (unescaped) character or not. 
+<a name="l202"><span class="ln">202  </span></a>    &quot;&quot;&quot;</span>
+<a name="l203"><span class="ln">203  </span></a>    <span class="s2">for </span><span class="s1">ch </span><span class="s2">in </span><span class="s1">input_iter:</span>
+<a name="l204"><span class="ln">204  </span></a>        <span class="s2">if </span><span class="s1">ch != </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">'</span><span class="s1">:</span>
+<a name="l205"><span class="ln">205  </span></a>            <span class="s2">yield </span><span class="s1">ch</span><span class="s2">, False</span>
+<a name="l206"><span class="ln">206  </span></a>            <span class="s2">continue</span>
+<a name="l207"><span class="ln">207  </span></a>        <span class="s1">ch = next(input_iter)</span>
+<a name="l208"><span class="ln">208  </span></a>        <span class="s1">representative = ESCAPE_MAPPINGS.get(ch</span><span class="s2">, </span><span class="s1">ch)</span>
+<a name="l209"><span class="ln">209  </span></a>        <span class="s2">if </span><span class="s1">representative </span><span class="s2">is None</span><span class="s1">:</span>
+<a name="l210"><span class="ln">210  </span></a>            <span class="s2">continue</span>
+<a name="l211"><span class="ln">211  </span></a>        <span class="s2">yield </span><span class="s1">representative</span><span class="s2">, True</span>
+<a name="l212"><span class="ln">212  </span></a>
+<a name="l213"><span class="ln">213  </span></a>
+<a name="l214"><span class="ln">214  </span></a><span class="s2">def </span><span class="s1">walk_to_end(ch</span><span class="s2">, </span><span class="s1">input_iter):</span>
+<a name="l215"><span class="ln">215  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l216"><span class="ln">216  </span></a>    The iterator is currently inside a capturing group. Walk to the close of 
+<a name="l217"><span class="ln">217  </span></a>    this group, skipping over any nested groups and handling escaped 
+<a name="l218"><span class="ln">218  </span></a>    parentheses correctly. 
+<a name="l219"><span class="ln">219  </span></a>    &quot;&quot;&quot;</span>
+<a name="l220"><span class="ln">220  </span></a>    <span class="s2">if </span><span class="s1">ch == </span><span class="s4">'('</span><span class="s1">:</span>
+<a name="l221"><span class="ln">221  </span></a>        <span class="s1">nesting = </span><span class="s5">1</span>
+<a name="l222"><span class="ln">222  </span></a>    <span class="s2">else</span><span class="s1">:</span>
+<a name="l223"><span class="ln">223  </span></a>        <span class="s1">nesting = </span><span class="s5">0</span>
+<a name="l224"><span class="ln">224  </span></a>    <span class="s2">for </span><span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped </span><span class="s2">in </span><span class="s1">input_iter:</span>
+<a name="l225"><span class="ln">225  </span></a>        <span class="s2">if </span><span class="s1">escaped:</span>
+<a name="l226"><span class="ln">226  </span></a>            <span class="s2">continue</span>
+<a name="l227"><span class="ln">227  </span></a>        <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">'('</span><span class="s1">:</span>
+<a name="l228"><span class="ln">228  </span></a>            <span class="s1">nesting += </span><span class="s5">1</span>
+<a name="l229"><span class="ln">229  </span></a>        <span class="s2">elif </span><span class="s1">ch == </span><span class="s4">')'</span><span class="s1">:</span>
+<a name="l230"><span class="ln">230  </span></a>            <span class="s2">if not </span><span class="s1">nesting:</span>
+<a name="l231"><span class="ln">231  </span></a>                <span class="s2">return</span>
+<a name="l232"><span class="ln">232  </span></a>            <span class="s1">nesting -= </span><span class="s5">1</span>
+<a name="l233"><span class="ln">233  </span></a>
+<a name="l234"><span class="ln">234  </span></a>
+<a name="l235"><span class="ln">235  </span></a><span class="s2">def </span><span class="s1">get_quantifier(ch</span><span class="s2">, </span><span class="s1">input_iter):</span>
+<a name="l236"><span class="ln">236  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l237"><span class="ln">237  </span></a>    Parse a quantifier from the input, where &quot;ch&quot; is the first character in the 
+<a name="l238"><span class="ln">238  </span></a>    quantifier. 
+<a name="l239"><span class="ln">239  </span></a> 
+<a name="l240"><span class="ln">240  </span></a>    Return the minimum number of occurrences permitted by the quantifier and 
+<a name="l241"><span class="ln">241  </span></a>    either None or the next character from the input_iter if the next character 
+<a name="l242"><span class="ln">242  </span></a>    is not part of the quantifier. 
+<a name="l243"><span class="ln">243  </span></a>    &quot;&quot;&quot;</span>
+<a name="l244"><span class="ln">244  </span></a>    <span class="s2">if </span><span class="s1">ch </span><span class="s2">in </span><span class="s4">'*?+'</span><span class="s1">:</span>
+<a name="l245"><span class="ln">245  </span></a>        <span class="s2">try</span><span class="s1">:</span>
+<a name="l246"><span class="ln">246  </span></a>            <span class="s1">ch2</span><span class="s2">, </span><span class="s1">escaped = next(input_iter)</span>
+<a name="l247"><span class="ln">247  </span></a>        <span class="s2">except </span><span class="s1">StopIteration:</span>
+<a name="l248"><span class="ln">248  </span></a>            <span class="s1">ch2 = </span><span class="s2">None</span>
+<a name="l249"><span class="ln">249  </span></a>        <span class="s2">if </span><span class="s1">ch2 == </span><span class="s4">'?'</span><span class="s1">:</span>
+<a name="l250"><span class="ln">250  </span></a>            <span class="s1">ch2 = </span><span class="s2">None</span>
+<a name="l251"><span class="ln">251  </span></a>        <span class="s2">if </span><span class="s1">ch == </span><span class="s4">'+'</span><span class="s1">:</span>
+<a name="l252"><span class="ln">252  </span></a>            <span class="s2">return </span><span class="s5">1</span><span class="s2">, </span><span class="s1">ch2</span>
+<a name="l253"><span class="ln">253  </span></a>        <span class="s2">return </span><span class="s5">0</span><span class="s2">, </span><span class="s1">ch2</span>
+<a name="l254"><span class="ln">254  </span></a>
+<a name="l255"><span class="ln">255  </span></a>    <span class="s1">quant = []</span>
+<a name="l256"><span class="ln">256  </span></a>    <span class="s2">while </span><span class="s1">ch != </span><span class="s4">'}'</span><span class="s1">:</span>
+<a name="l257"><span class="ln">257  </span></a>        <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(input_iter)</span>
+<a name="l258"><span class="ln">258  </span></a>        <span class="s1">quant.append(ch)</span>
+<a name="l259"><span class="ln">259  </span></a>    <span class="s1">quant = quant[:-</span><span class="s5">1</span><span class="s1">]</span>
+<a name="l260"><span class="ln">260  </span></a>    <span class="s1">values = </span><span class="s4">''</span><span class="s1">.join(quant).split(</span><span class="s4">','</span><span class="s1">)</span>
+<a name="l261"><span class="ln">261  </span></a>
+<a name="l262"><span class="ln">262  </span></a>    <span class="s3"># Consume the trailing '?', if necessary.</span>
+<a name="l263"><span class="ln">263  </span></a>    <span class="s2">try</span><span class="s1">:</span>
+<a name="l264"><span class="ln">264  </span></a>        <span class="s1">ch</span><span class="s2">, </span><span class="s1">escaped = next(input_iter)</span>
+<a name="l265"><span class="ln">265  </span></a>    <span class="s2">except </span><span class="s1">StopIteration:</span>
+<a name="l266"><span class="ln">266  </span></a>        <span class="s1">ch = </span><span class="s2">None</span>
+<a name="l267"><span class="ln">267  </span></a>    <span class="s2">if </span><span class="s1">ch == </span><span class="s4">'?'</span><span class="s1">:</span>
+<a name="l268"><span class="ln">268  </span></a>        <span class="s1">ch = </span><span class="s2">None</span>
+<a name="l269"><span class="ln">269  </span></a>    <span class="s2">return </span><span class="s1">int(values[</span><span class="s5">0</span><span class="s1">])</span><span class="s2">, </span><span class="s1">ch</span>
+<a name="l270"><span class="ln">270  </span></a>
+<a name="l271"><span class="ln">271  </span></a>
+<a name="l272"><span class="ln">272  </span></a><span class="s2">def </span><span class="s1">contains(source</span><span class="s2">, </span><span class="s1">inst):</span>
+<a name="l273"><span class="ln">273  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l274"><span class="ln">274  </span></a>    Return True if the &quot;source&quot; contains an instance of &quot;inst&quot;. False, 
+<a name="l275"><span class="ln">275  </span></a>    otherwise. 
+<a name="l276"><span class="ln">276  </span></a>    &quot;&quot;&quot;</span>
+<a name="l277"><span class="ln">277  </span></a>    <span class="s2">if </span><span class="s1">isinstance(source</span><span class="s2">, </span><span class="s1">inst):</span>
+<a name="l278"><span class="ln">278  </span></a>        <span class="s2">return True</span>
+<a name="l279"><span class="ln">279  </span></a>    <span class="s2">if </span><span class="s1">isinstance(source</span><span class="s2">, </span><span class="s1">NonCapture):</span>
+<a name="l280"><span class="ln">280  </span></a>        <span class="s2">for </span><span class="s1">elt </span><span class="s2">in </span><span class="s1">source:</span>
+<a name="l281"><span class="ln">281  </span></a>            <span class="s2">if </span><span class="s1">contains(elt</span><span class="s2">, </span><span class="s1">inst):</span>
+<a name="l282"><span class="ln">282  </span></a>                <span class="s2">return True</span>
+<a name="l283"><span class="ln">283  </span></a>    <span class="s2">return False</span>
+<a name="l284"><span class="ln">284  </span></a>
+<a name="l285"><span class="ln">285  </span></a>
+<a name="l286"><span class="ln">286  </span></a><span class="s2">def </span><span class="s1">flatten_result(source):</span>
+<a name="l287"><span class="ln">287  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l288"><span class="ln">288  </span></a>    Turn the given source sequence into a list of reg-exp possibilities and 
+<a name="l289"><span class="ln">289  </span></a>    their arguments. Return a list of strings and a list of argument lists. 
+<a name="l290"><span class="ln">290  </span></a>    Each of the two lists will be of the same length. 
+<a name="l291"><span class="ln">291  </span></a>    &quot;&quot;&quot;</span>
+<a name="l292"><span class="ln">292  </span></a>    <span class="s2">if </span><span class="s1">source </span><span class="s2">is None</span><span class="s1">:</span>
+<a name="l293"><span class="ln">293  </span></a>        <span class="s2">return </span><span class="s1">[</span><span class="s4">''</span><span class="s1">]</span><span class="s2">, </span><span class="s1">[[]]</span>
+<a name="l294"><span class="ln">294  </span></a>    <span class="s2">if </span><span class="s1">isinstance(source</span><span class="s2">, </span><span class="s1">Group):</span>
+<a name="l295"><span class="ln">295  </span></a>        <span class="s2">if </span><span class="s1">source[</span><span class="s5">1</span><span class="s1">] </span><span class="s2">is None</span><span class="s1">:</span>
+<a name="l296"><span class="ln">296  </span></a>            <span class="s1">params = []</span>
+<a name="l297"><span class="ln">297  </span></a>        <span class="s2">else</span><span class="s1">:</span>
+<a name="l298"><span class="ln">298  </span></a>            <span class="s1">params = [source[</span><span class="s5">1</span><span class="s1">]]</span>
+<a name="l299"><span class="ln">299  </span></a>        <span class="s2">return </span><span class="s1">[source[</span><span class="s5">0</span><span class="s1">]]</span><span class="s2">, </span><span class="s1">[params]</span>
+<a name="l300"><span class="ln">300  </span></a>    <span class="s1">result = [</span><span class="s4">''</span><span class="s1">]</span>
+<a name="l301"><span class="ln">301  </span></a>    <span class="s1">result_args = [[]]</span>
+<a name="l302"><span class="ln">302  </span></a>    <span class="s1">pos = last = </span><span class="s5">0</span>
+<a name="l303"><span class="ln">303  </span></a>    <span class="s2">for </span><span class="s1">pos</span><span class="s2">, </span><span class="s1">elt </span><span class="s2">in </span><span class="s1">enumerate(source):</span>
+<a name="l304"><span class="ln">304  </span></a>        <span class="s2">if </span><span class="s1">isinstance(elt</span><span class="s2">, </span><span class="s1">str):</span>
+<a name="l305"><span class="ln">305  </span></a>            <span class="s2">continue</span>
+<a name="l306"><span class="ln">306  </span></a>        <span class="s1">piece = </span><span class="s4">''</span><span class="s1">.join(source[last:pos])</span>
+<a name="l307"><span class="ln">307  </span></a>        <span class="s2">if </span><span class="s1">isinstance(elt</span><span class="s2">, </span><span class="s1">Group):</span>
+<a name="l308"><span class="ln">308  </span></a>            <span class="s1">piece += elt[</span><span class="s5">0</span><span class="s1">]</span>
+<a name="l309"><span class="ln">309  </span></a>            <span class="s1">param = elt[</span><span class="s5">1</span><span class="s1">]</span>
+<a name="l310"><span class="ln">310  </span></a>        <span class="s2">else</span><span class="s1">:</span>
+<a name="l311"><span class="ln">311  </span></a>            <span class="s1">param = </span><span class="s2">None</span>
+<a name="l312"><span class="ln">312  </span></a>        <span class="s1">last = pos + </span><span class="s5">1</span>
+<a name="l313"><span class="ln">313  </span></a>        <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(len(result)):</span>
+<a name="l314"><span class="ln">314  </span></a>            <span class="s1">result[i] += piece</span>
+<a name="l315"><span class="ln">315  </span></a>            <span class="s2">if </span><span class="s1">param:</span>
+<a name="l316"><span class="ln">316  </span></a>                <span class="s1">result_args[i].append(param)</span>
+<a name="l317"><span class="ln">317  </span></a>        <span class="s2">if </span><span class="s1">isinstance(elt</span><span class="s2">, </span><span class="s1">(Choice</span><span class="s2">, </span><span class="s1">NonCapture)):</span>
+<a name="l318"><span class="ln">318  </span></a>            <span class="s2">if </span><span class="s1">isinstance(elt</span><span class="s2">, </span><span class="s1">NonCapture):</span>
+<a name="l319"><span class="ln">319  </span></a>                <span class="s1">elt = [elt]</span>
+<a name="l320"><span class="ln">320  </span></a>            <span class="s1">inner_result</span><span class="s2">, </span><span class="s1">inner_args = []</span><span class="s2">, </span><span class="s1">[]</span>
+<a name="l321"><span class="ln">321  </span></a>            <span class="s2">for </span><span class="s1">item </span><span class="s2">in </span><span class="s1">elt:</span>
+<a name="l322"><span class="ln">322  </span></a>                <span class="s1">res</span><span class="s2">, </span><span class="s1">args = flatten_result(item)</span>
+<a name="l323"><span class="ln">323  </span></a>                <span class="s1">inner_result.extend(res)</span>
+<a name="l324"><span class="ln">324  </span></a>                <span class="s1">inner_args.extend(args)</span>
+<a name="l325"><span class="ln">325  </span></a>            <span class="s1">new_result = []</span>
+<a name="l326"><span class="ln">326  </span></a>            <span class="s1">new_args = []</span>
+<a name="l327"><span class="ln">327  </span></a>            <span class="s2">for </span><span class="s1">item</span><span class="s2">, </span><span class="s1">args </span><span class="s2">in </span><span class="s1">zip(result</span><span class="s2">, </span><span class="s1">result_args):</span>
+<a name="l328"><span class="ln">328  </span></a>                <span class="s2">for </span><span class="s1">i_item</span><span class="s2">, </span><span class="s1">i_args </span><span class="s2">in </span><span class="s1">zip(inner_result</span><span class="s2">, </span><span class="s1">inner_args):</span>
+<a name="l329"><span class="ln">329  </span></a>                    <span class="s1">new_result.append(item + i_item)</span>
+<a name="l330"><span class="ln">330  </span></a>                    <span class="s1">new_args.append(args[:] + i_args)</span>
+<a name="l331"><span class="ln">331  </span></a>            <span class="s1">result = new_result</span>
+<a name="l332"><span class="ln">332  </span></a>            <span class="s1">result_args = new_args</span>
+<a name="l333"><span class="ln">333  </span></a>    <span class="s2">if </span><span class="s1">pos &gt;= last:</span>
+<a name="l334"><span class="ln">334  </span></a>        <span class="s1">piece = </span><span class="s4">''</span><span class="s1">.join(source[last:])</span>
+<a name="l335"><span class="ln">335  </span></a>        <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(len(result)):</span>
+<a name="l336"><span class="ln">336  </span></a>            <span class="s1">result[i] += piece</span>
+<a name="l337"><span class="ln">337  </span></a>    <span class="s2">return </span><span class="s1">result</span><span class="s2">, </span><span class="s1">result_args</span>
+<a name="l338"><span class="ln">338  </span></a>
+<a name="l339"><span class="ln">339  </span></a>
+<a name="l340"><span class="ln">340  </span></a><span class="s2">def </span><span class="s1">_lazy_re_compile(regex</span><span class="s2">, </span><span class="s1">flags=</span><span class="s5">0</span><span class="s1">):</span>
+<a name="l341"><span class="ln">341  </span></a>    <span class="s0">&quot;&quot;&quot;Lazily compile a regex with flags.&quot;&quot;&quot;</span>
+<a name="l342"><span class="ln">342  </span></a>    <span class="s2">def </span><span class="s1">_compile():</span>
+<a name="l343"><span class="ln">343  </span></a>        <span class="s3"># Compile the regex if it was not passed pre-compiled.</span>
+<a name="l344"><span class="ln">344  </span></a>        <span class="s2">if </span><span class="s1">isinstance(regex</span><span class="s2">, </span><span class="s1">(str</span><span class="s2">, </span><span class="s1">bytes)):</span>
+<a name="l345"><span class="ln">345  </span></a>            <span class="s2">return </span><span class="s1">re.compile(regex</span><span class="s2">, </span><span class="s1">flags)</span>
+<a name="l346"><span class="ln">346  </span></a>        <span class="s2">else</span><span class="s1">:</span>
+<a name="l347"><span class="ln">347  </span></a>            <span class="s2">assert not </span><span class="s1">flags</span><span class="s2">, </span><span class="s1">(</span>
+<a name="l348"><span class="ln">348  </span></a>                <span class="s4">'flags must be empty if regex is passed pre-compiled'</span>
+<a name="l349"><span class="ln">349  </span></a>            <span class="s1">)</span>
+<a name="l350"><span class="ln">350  </span></a>            <span class="s2">return </span><span class="s1">regex</span>
+<a name="l351"><span class="ln">351  </span></a>    <span class="s2">return </span><span class="s1">SimpleLazyObject(_compile)</span>
+<a name="l352"><span class="ln">352  </span></a></pre>
+</body>
+</html>

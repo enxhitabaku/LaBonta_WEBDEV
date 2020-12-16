@@ -1,0 +1,74 @@
+<html>
+<head>
+<title>gzip.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #629755; font-style: italic;}
+.s4 { color: #808080;}
+.s5 { color: #6897bb;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+gzip.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">from </span><span class="s1">django.utils.cache </span><span class="s0">import </span><span class="s1">patch_vary_headers</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">from </span><span class="s1">django.utils.deprecation </span><span class="s0">import </span><span class="s1">MiddlewareMixin</span>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">from </span><span class="s1">django.utils.regex_helper </span><span class="s0">import </span><span class="s1">_lazy_re_compile</span>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">from </span><span class="s1">django.utils.text </span><span class="s0">import </span><span class="s1">compress_sequence</span><span class="s0">, </span><span class="s1">compress_string</span>
+<a name="l5"><span class="ln">5    </span></a>
+<a name="l6"><span class="ln">6    </span></a><span class="s1">re_accepts_gzip = _lazy_re_compile(</span><span class="s2">r'\bgzip\b'</span><span class="s1">)</span>
+<a name="l7"><span class="ln">7    </span></a>
+<a name="l8"><span class="ln">8    </span></a>
+<a name="l9"><span class="ln">9    </span></a><span class="s0">class </span><span class="s1">GZipMiddleware(MiddlewareMixin):</span>
+<a name="l10"><span class="ln">10   </span></a>    <span class="s3">&quot;&quot;&quot; 
+<a name="l11"><span class="ln">11   </span></a>    Compress content if the browser allows gzip compression. 
+<a name="l12"><span class="ln">12   </span></a>    Set the Vary header accordingly, so that caches will base their storage 
+<a name="l13"><span class="ln">13   </span></a>    on the Accept-Encoding header. 
+<a name="l14"><span class="ln">14   </span></a>    &quot;&quot;&quot;</span>
+<a name="l15"><span class="ln">15   </span></a>    <span class="s0">def </span><span class="s1">process_response(self</span><span class="s0">, </span><span class="s1">request</span><span class="s0">, </span><span class="s1">response):</span>
+<a name="l16"><span class="ln">16   </span></a>        <span class="s4"># It's not worth attempting to compress really short responses.</span>
+<a name="l17"><span class="ln">17   </span></a>        <span class="s0">if not </span><span class="s1">response.streaming </span><span class="s0">and </span><span class="s1">len(response.content) &lt; </span><span class="s5">200</span><span class="s1">:</span>
+<a name="l18"><span class="ln">18   </span></a>            <span class="s0">return </span><span class="s1">response</span>
+<a name="l19"><span class="ln">19   </span></a>
+<a name="l20"><span class="ln">20   </span></a>        <span class="s4"># Avoid gzipping if we've already got a content-encoding.</span>
+<a name="l21"><span class="ln">21   </span></a>        <span class="s0">if </span><span class="s1">response.has_header(</span><span class="s2">'Content-Encoding'</span><span class="s1">):</span>
+<a name="l22"><span class="ln">22   </span></a>            <span class="s0">return </span><span class="s1">response</span>
+<a name="l23"><span class="ln">23   </span></a>
+<a name="l24"><span class="ln">24   </span></a>        <span class="s1">patch_vary_headers(response</span><span class="s0">, </span><span class="s1">(</span><span class="s2">'Accept-Encoding'</span><span class="s0">,</span><span class="s1">))</span>
+<a name="l25"><span class="ln">25   </span></a>
+<a name="l26"><span class="ln">26   </span></a>        <span class="s1">ae = request.META.get(</span><span class="s2">'HTTP_ACCEPT_ENCODING'</span><span class="s0">, </span><span class="s2">''</span><span class="s1">)</span>
+<a name="l27"><span class="ln">27   </span></a>        <span class="s0">if not </span><span class="s1">re_accepts_gzip.search(ae):</span>
+<a name="l28"><span class="ln">28   </span></a>            <span class="s0">return </span><span class="s1">response</span>
+<a name="l29"><span class="ln">29   </span></a>
+<a name="l30"><span class="ln">30   </span></a>        <span class="s0">if </span><span class="s1">response.streaming:</span>
+<a name="l31"><span class="ln">31   </span></a>            <span class="s4"># Delete the `Content-Length` header for streaming content, because</span>
+<a name="l32"><span class="ln">32   </span></a>            <span class="s4"># we won't know the compressed size until we stream it.</span>
+<a name="l33"><span class="ln">33   </span></a>            <span class="s1">response.streaming_content = compress_sequence(response.streaming_content)</span>
+<a name="l34"><span class="ln">34   </span></a>            <span class="s0">del </span><span class="s1">response[</span><span class="s2">'Content-Length'</span><span class="s1">]</span>
+<a name="l35"><span class="ln">35   </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l36"><span class="ln">36   </span></a>            <span class="s4"># Return the compressed content only if it's actually shorter.</span>
+<a name="l37"><span class="ln">37   </span></a>            <span class="s1">compressed_content = compress_string(response.content)</span>
+<a name="l38"><span class="ln">38   </span></a>            <span class="s0">if </span><span class="s1">len(compressed_content) &gt;= len(response.content):</span>
+<a name="l39"><span class="ln">39   </span></a>                <span class="s0">return </span><span class="s1">response</span>
+<a name="l40"><span class="ln">40   </span></a>            <span class="s1">response.content = compressed_content</span>
+<a name="l41"><span class="ln">41   </span></a>            <span class="s1">response[</span><span class="s2">'Content-Length'</span><span class="s1">] = str(len(response.content))</span>
+<a name="l42"><span class="ln">42   </span></a>
+<a name="l43"><span class="ln">43   </span></a>        <span class="s4"># If there is a strong ETag, make it weak to fulfill the requirements</span>
+<a name="l44"><span class="ln">44   </span></a>        <span class="s4"># of RFC 7232 section-2.1 while also allowing conditional request</span>
+<a name="l45"><span class="ln">45   </span></a>        <span class="s4"># matches on ETags.</span>
+<a name="l46"><span class="ln">46   </span></a>        <span class="s1">etag = response.get(</span><span class="s2">'ETag'</span><span class="s1">)</span>
+<a name="l47"><span class="ln">47   </span></a>        <span class="s0">if </span><span class="s1">etag </span><span class="s0">and </span><span class="s1">etag.startswith(</span><span class="s2">'&quot;'</span><span class="s1">):</span>
+<a name="l48"><span class="ln">48   </span></a>            <span class="s1">response[</span><span class="s2">'ETag'</span><span class="s1">] = </span><span class="s2">'W/' </span><span class="s1">+ etag</span>
+<a name="l49"><span class="ln">49   </span></a>        <span class="s1">response[</span><span class="s2">'Content-Encoding'</span><span class="s1">] = </span><span class="s2">'gzip'</span>
+<a name="l50"><span class="ln">50   </span></a>
+<a name="l51"><span class="ln">51   </span></a>        <span class="s0">return </span><span class="s1">response</span>
+<a name="l52"><span class="ln">52   </span></a></pre>
+</body>
+</html>

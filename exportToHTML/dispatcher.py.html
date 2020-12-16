@@ -1,0 +1,317 @@
+<html>
+<head>
+<title>dispatcher.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #808080;}
+.s4 { color: #629755; font-style: italic;}
+.s5 { color: #6897bb;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+dispatcher.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">import </span><span class="s1">threading</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">import </span><span class="s1">warnings</span>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">import </span><span class="s1">weakref</span>
+<a name="l4"><span class="ln">4    </span></a>
+<a name="l5"><span class="ln">5    </span></a><span class="s0">from </span><span class="s1">django.utils.deprecation </span><span class="s0">import </span><span class="s1">RemovedInDjango40Warning</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s0">from </span><span class="s1">django.utils.inspect </span><span class="s0">import </span><span class="s1">func_accepts_kwargs</span>
+<a name="l7"><span class="ln">7    </span></a>
+<a name="l8"><span class="ln">8    </span></a>
+<a name="l9"><span class="ln">9    </span></a><span class="s0">def </span><span class="s1">_make_id(target):</span>
+<a name="l10"><span class="ln">10   </span></a>    <span class="s0">if </span><span class="s1">hasattr(target</span><span class="s0">, </span><span class="s2">'__func__'</span><span class="s1">):</span>
+<a name="l11"><span class="ln">11   </span></a>        <span class="s0">return </span><span class="s1">(id(target.__self__)</span><span class="s0">, </span><span class="s1">id(target.__func__))</span>
+<a name="l12"><span class="ln">12   </span></a>    <span class="s0">return </span><span class="s1">id(target)</span>
+<a name="l13"><span class="ln">13   </span></a>
+<a name="l14"><span class="ln">14   </span></a>
+<a name="l15"><span class="ln">15   </span></a><span class="s1">NONE_ID = _make_id(</span><span class="s0">None</span><span class="s1">)</span>
+<a name="l16"><span class="ln">16   </span></a>
+<a name="l17"><span class="ln">17   </span></a><span class="s3"># A marker for caching</span>
+<a name="l18"><span class="ln">18   </span></a><span class="s1">NO_RECEIVERS = object()</span>
+<a name="l19"><span class="ln">19   </span></a>
+<a name="l20"><span class="ln">20   </span></a>
+<a name="l21"><span class="ln">21   </span></a><span class="s0">class </span><span class="s1">Signal:</span>
+<a name="l22"><span class="ln">22   </span></a>    <span class="s4">&quot;&quot;&quot; 
+<a name="l23"><span class="ln">23   </span></a>    Base class for all signals 
+<a name="l24"><span class="ln">24   </span></a> 
+<a name="l25"><span class="ln">25   </span></a>    Internal attributes: 
+<a name="l26"><span class="ln">26   </span></a> 
+<a name="l27"><span class="ln">27   </span></a>        receivers 
+<a name="l28"><span class="ln">28   </span></a>            { receiverkey (id) : weakref(receiver) } 
+<a name="l29"><span class="ln">29   </span></a>    &quot;&quot;&quot;</span>
+<a name="l30"><span class="ln">30   </span></a>    <span class="s0">def </span><span class="s1">__init__(self</span><span class="s0">, </span><span class="s1">providing_args=</span><span class="s0">None, </span><span class="s1">use_caching=</span><span class="s0">False</span><span class="s1">):</span>
+<a name="l31"><span class="ln">31   </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l32"><span class="ln">32   </span></a>        Create a new signal. 
+<a name="l33"><span class="ln">33   </span></a>        &quot;&quot;&quot;</span>
+<a name="l34"><span class="ln">34   </span></a>        <span class="s1">self.receivers = []</span>
+<a name="l35"><span class="ln">35   </span></a>        <span class="s0">if </span><span class="s1">providing_args </span><span class="s0">is not None</span><span class="s1">:</span>
+<a name="l36"><span class="ln">36   </span></a>            <span class="s1">warnings.warn(</span>
+<a name="l37"><span class="ln">37   </span></a>                <span class="s2">'The providing_args argument is deprecated. As it is purely '</span>
+<a name="l38"><span class="ln">38   </span></a>                <span class="s2">'documentational, it has no replacement. If you rely on this '</span>
+<a name="l39"><span class="ln">39   </span></a>                <span class="s2">'argument as documentation, you can move the text to a code '</span>
+<a name="l40"><span class="ln">40   </span></a>                <span class="s2">'comment or docstring.'</span><span class="s0">,</span>
+<a name="l41"><span class="ln">41   </span></a>                <span class="s1">RemovedInDjango40Warning</span><span class="s0">, </span><span class="s1">stacklevel=</span><span class="s5">2</span><span class="s0">,</span>
+<a name="l42"><span class="ln">42   </span></a>            <span class="s1">)</span>
+<a name="l43"><span class="ln">43   </span></a>        <span class="s1">self.lock = threading.Lock()</span>
+<a name="l44"><span class="ln">44   </span></a>        <span class="s1">self.use_caching = use_caching</span>
+<a name="l45"><span class="ln">45   </span></a>        <span class="s3"># For convenience we create empty caches even if they are not used.</span>
+<a name="l46"><span class="ln">46   </span></a>        <span class="s3"># A note about caching: if use_caching is defined, then for each</span>
+<a name="l47"><span class="ln">47   </span></a>        <span class="s3"># distinct sender we cache the receivers that sender has in</span>
+<a name="l48"><span class="ln">48   </span></a>        <span class="s3"># 'sender_receivers_cache'. The cache is cleaned when .connect() or</span>
+<a name="l49"><span class="ln">49   </span></a>        <span class="s3"># .disconnect() is called and populated on send().</span>
+<a name="l50"><span class="ln">50   </span></a>        <span class="s1">self.sender_receivers_cache = weakref.WeakKeyDictionary() </span><span class="s0">if </span><span class="s1">use_caching </span><span class="s0">else </span><span class="s1">{}</span>
+<a name="l51"><span class="ln">51   </span></a>        <span class="s1">self._dead_receivers = </span><span class="s0">False</span>
+<a name="l52"><span class="ln">52   </span></a>
+<a name="l53"><span class="ln">53   </span></a>    <span class="s0">def </span><span class="s1">connect(self</span><span class="s0">, </span><span class="s1">receiver</span><span class="s0">, </span><span class="s1">sender=</span><span class="s0">None, </span><span class="s1">weak=</span><span class="s0">True, </span><span class="s1">dispatch_uid=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l54"><span class="ln">54   </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l55"><span class="ln">55   </span></a>        Connect receiver to sender for signal. 
+<a name="l56"><span class="ln">56   </span></a> 
+<a name="l57"><span class="ln">57   </span></a>        Arguments: 
+<a name="l58"><span class="ln">58   </span></a> 
+<a name="l59"><span class="ln">59   </span></a>            receiver 
+<a name="l60"><span class="ln">60   </span></a>                A function or an instance method which is to receive signals. 
+<a name="l61"><span class="ln">61   </span></a>                Receivers must be hashable objects. 
+<a name="l62"><span class="ln">62   </span></a> 
+<a name="l63"><span class="ln">63   </span></a>                If weak is True, then receiver must be weak referenceable. 
+<a name="l64"><span class="ln">64   </span></a> 
+<a name="l65"><span class="ln">65   </span></a>                Receivers must be able to accept keyword arguments. 
+<a name="l66"><span class="ln">66   </span></a> 
+<a name="l67"><span class="ln">67   </span></a>                If a receiver is connected with a dispatch_uid argument, it 
+<a name="l68"><span class="ln">68   </span></a>                will not be added if another receiver was already connected 
+<a name="l69"><span class="ln">69   </span></a>                with that dispatch_uid. 
+<a name="l70"><span class="ln">70   </span></a> 
+<a name="l71"><span class="ln">71   </span></a>            sender 
+<a name="l72"><span class="ln">72   </span></a>                The sender to which the receiver should respond. Must either be 
+<a name="l73"><span class="ln">73   </span></a>                a Python object, or None to receive events from any sender. 
+<a name="l74"><span class="ln">74   </span></a> 
+<a name="l75"><span class="ln">75   </span></a>            weak 
+<a name="l76"><span class="ln">76   </span></a>                Whether to use weak references to the receiver. By default, the 
+<a name="l77"><span class="ln">77   </span></a>                module will attempt to use weak references to the receiver 
+<a name="l78"><span class="ln">78   </span></a>                objects. If this parameter is false, then strong references will 
+<a name="l79"><span class="ln">79   </span></a>                be used. 
+<a name="l80"><span class="ln">80   </span></a> 
+<a name="l81"><span class="ln">81   </span></a>            dispatch_uid 
+<a name="l82"><span class="ln">82   </span></a>                An identifier used to uniquely identify a particular instance of 
+<a name="l83"><span class="ln">83   </span></a>                a receiver. This will usually be a string, though it may be 
+<a name="l84"><span class="ln">84   </span></a>                anything hashable. 
+<a name="l85"><span class="ln">85   </span></a>        &quot;&quot;&quot;</span>
+<a name="l86"><span class="ln">86   </span></a>        <span class="s0">from </span><span class="s1">django.conf </span><span class="s0">import </span><span class="s1">settings</span>
+<a name="l87"><span class="ln">87   </span></a>
+<a name="l88"><span class="ln">88   </span></a>        <span class="s3"># If DEBUG is on, check that we got a good receiver</span>
+<a name="l89"><span class="ln">89   </span></a>        <span class="s0">if </span><span class="s1">settings.configured </span><span class="s0">and </span><span class="s1">settings.DEBUG:</span>
+<a name="l90"><span class="ln">90   </span></a>            <span class="s0">assert </span><span class="s1">callable(receiver)</span><span class="s0">, </span><span class="s2">&quot;Signal receivers must be callable.&quot;</span>
+<a name="l91"><span class="ln">91   </span></a>
+<a name="l92"><span class="ln">92   </span></a>            <span class="s3"># Check for **kwargs</span>
+<a name="l93"><span class="ln">93   </span></a>            <span class="s0">if not </span><span class="s1">func_accepts_kwargs(receiver):</span>
+<a name="l94"><span class="ln">94   </span></a>                <span class="s0">raise </span><span class="s1">ValueError(</span><span class="s2">&quot;Signal receivers must accept keyword arguments (**kwargs).&quot;</span><span class="s1">)</span>
+<a name="l95"><span class="ln">95   </span></a>
+<a name="l96"><span class="ln">96   </span></a>        <span class="s0">if </span><span class="s1">dispatch_uid:</span>
+<a name="l97"><span class="ln">97   </span></a>            <span class="s1">lookup_key = (dispatch_uid</span><span class="s0">, </span><span class="s1">_make_id(sender))</span>
+<a name="l98"><span class="ln">98   </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l99"><span class="ln">99   </span></a>            <span class="s1">lookup_key = (_make_id(receiver)</span><span class="s0">, </span><span class="s1">_make_id(sender))</span>
+<a name="l100"><span class="ln">100  </span></a>
+<a name="l101"><span class="ln">101  </span></a>        <span class="s0">if </span><span class="s1">weak:</span>
+<a name="l102"><span class="ln">102  </span></a>            <span class="s1">ref = weakref.ref</span>
+<a name="l103"><span class="ln">103  </span></a>            <span class="s1">receiver_object = receiver</span>
+<a name="l104"><span class="ln">104  </span></a>            <span class="s3"># Check for bound methods</span>
+<a name="l105"><span class="ln">105  </span></a>            <span class="s0">if </span><span class="s1">hasattr(receiver</span><span class="s0">, </span><span class="s2">'__self__'</span><span class="s1">) </span><span class="s0">and </span><span class="s1">hasattr(receiver</span><span class="s0">, </span><span class="s2">'__func__'</span><span class="s1">):</span>
+<a name="l106"><span class="ln">106  </span></a>                <span class="s1">ref = weakref.WeakMethod</span>
+<a name="l107"><span class="ln">107  </span></a>                <span class="s1">receiver_object = receiver.__self__</span>
+<a name="l108"><span class="ln">108  </span></a>            <span class="s1">receiver = ref(receiver)</span>
+<a name="l109"><span class="ln">109  </span></a>            <span class="s1">weakref.finalize(receiver_object</span><span class="s0">, </span><span class="s1">self._remove_receiver)</span>
+<a name="l110"><span class="ln">110  </span></a>
+<a name="l111"><span class="ln">111  </span></a>        <span class="s0">with </span><span class="s1">self.lock:</span>
+<a name="l112"><span class="ln">112  </span></a>            <span class="s1">self._clear_dead_receivers()</span>
+<a name="l113"><span class="ln">113  </span></a>            <span class="s0">if not </span><span class="s1">any(r_key == lookup_key </span><span class="s0">for </span><span class="s1">r_key</span><span class="s0">, </span><span class="s1">_ </span><span class="s0">in </span><span class="s1">self.receivers):</span>
+<a name="l114"><span class="ln">114  </span></a>                <span class="s1">self.receivers.append((lookup_key</span><span class="s0">, </span><span class="s1">receiver))</span>
+<a name="l115"><span class="ln">115  </span></a>            <span class="s1">self.sender_receivers_cache.clear()</span>
+<a name="l116"><span class="ln">116  </span></a>
+<a name="l117"><span class="ln">117  </span></a>    <span class="s0">def </span><span class="s1">disconnect(self</span><span class="s0">, </span><span class="s1">receiver=</span><span class="s0">None, </span><span class="s1">sender=</span><span class="s0">None, </span><span class="s1">dispatch_uid=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l118"><span class="ln">118  </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l119"><span class="ln">119  </span></a>        Disconnect receiver from sender for signal. 
+<a name="l120"><span class="ln">120  </span></a> 
+<a name="l121"><span class="ln">121  </span></a>        If weak references are used, disconnect need not be called. The receiver 
+<a name="l122"><span class="ln">122  </span></a>        will be removed from dispatch automatically. 
+<a name="l123"><span class="ln">123  </span></a> 
+<a name="l124"><span class="ln">124  </span></a>        Arguments: 
+<a name="l125"><span class="ln">125  </span></a> 
+<a name="l126"><span class="ln">126  </span></a>            receiver 
+<a name="l127"><span class="ln">127  </span></a>                The registered receiver to disconnect. May be none if 
+<a name="l128"><span class="ln">128  </span></a>                dispatch_uid is specified. 
+<a name="l129"><span class="ln">129  </span></a> 
+<a name="l130"><span class="ln">130  </span></a>            sender 
+<a name="l131"><span class="ln">131  </span></a>                The registered sender to disconnect 
+<a name="l132"><span class="ln">132  </span></a> 
+<a name="l133"><span class="ln">133  </span></a>            dispatch_uid 
+<a name="l134"><span class="ln">134  </span></a>                the unique identifier of the receiver to disconnect 
+<a name="l135"><span class="ln">135  </span></a>        &quot;&quot;&quot;</span>
+<a name="l136"><span class="ln">136  </span></a>        <span class="s0">if </span><span class="s1">dispatch_uid:</span>
+<a name="l137"><span class="ln">137  </span></a>            <span class="s1">lookup_key = (dispatch_uid</span><span class="s0">, </span><span class="s1">_make_id(sender))</span>
+<a name="l138"><span class="ln">138  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l139"><span class="ln">139  </span></a>            <span class="s1">lookup_key = (_make_id(receiver)</span><span class="s0">, </span><span class="s1">_make_id(sender))</span>
+<a name="l140"><span class="ln">140  </span></a>
+<a name="l141"><span class="ln">141  </span></a>        <span class="s1">disconnected = </span><span class="s0">False</span>
+<a name="l142"><span class="ln">142  </span></a>        <span class="s0">with </span><span class="s1">self.lock:</span>
+<a name="l143"><span class="ln">143  </span></a>            <span class="s1">self._clear_dead_receivers()</span>
+<a name="l144"><span class="ln">144  </span></a>            <span class="s0">for </span><span class="s1">index </span><span class="s0">in </span><span class="s1">range(len(self.receivers)):</span>
+<a name="l145"><span class="ln">145  </span></a>                <span class="s1">(r_key</span><span class="s0">, </span><span class="s1">_) = self.receivers[index]</span>
+<a name="l146"><span class="ln">146  </span></a>                <span class="s0">if </span><span class="s1">r_key == lookup_key:</span>
+<a name="l147"><span class="ln">147  </span></a>                    <span class="s1">disconnected = </span><span class="s0">True</span>
+<a name="l148"><span class="ln">148  </span></a>                    <span class="s0">del </span><span class="s1">self.receivers[index]</span>
+<a name="l149"><span class="ln">149  </span></a>                    <span class="s0">break</span>
+<a name="l150"><span class="ln">150  </span></a>            <span class="s1">self.sender_receivers_cache.clear()</span>
+<a name="l151"><span class="ln">151  </span></a>        <span class="s0">return </span><span class="s1">disconnected</span>
+<a name="l152"><span class="ln">152  </span></a>
+<a name="l153"><span class="ln">153  </span></a>    <span class="s0">def </span><span class="s1">has_listeners(self</span><span class="s0">, </span><span class="s1">sender=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l154"><span class="ln">154  </span></a>        <span class="s0">return </span><span class="s1">bool(self._live_receivers(sender))</span>
+<a name="l155"><span class="ln">155  </span></a>
+<a name="l156"><span class="ln">156  </span></a>    <span class="s0">def </span><span class="s1">send(self</span><span class="s0">, </span><span class="s1">sender</span><span class="s0">, </span><span class="s1">**named):</span>
+<a name="l157"><span class="ln">157  </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l158"><span class="ln">158  </span></a>        Send signal from sender to all connected receivers. 
+<a name="l159"><span class="ln">159  </span></a> 
+<a name="l160"><span class="ln">160  </span></a>        If any receiver raises an error, the error propagates back through send, 
+<a name="l161"><span class="ln">161  </span></a>        terminating the dispatch loop. So it's possible that all receivers 
+<a name="l162"><span class="ln">162  </span></a>        won't be called if an error is raised. 
+<a name="l163"><span class="ln">163  </span></a> 
+<a name="l164"><span class="ln">164  </span></a>        Arguments: 
+<a name="l165"><span class="ln">165  </span></a> 
+<a name="l166"><span class="ln">166  </span></a>            sender 
+<a name="l167"><span class="ln">167  </span></a>                The sender of the signal. Either a specific object or None. 
+<a name="l168"><span class="ln">168  </span></a> 
+<a name="l169"><span class="ln">169  </span></a>            named 
+<a name="l170"><span class="ln">170  </span></a>                Named arguments which will be passed to receivers. 
+<a name="l171"><span class="ln">171  </span></a> 
+<a name="l172"><span class="ln">172  </span></a>        Return a list of tuple pairs [(receiver, response), ... ]. 
+<a name="l173"><span class="ln">173  </span></a>        &quot;&quot;&quot;</span>
+<a name="l174"><span class="ln">174  </span></a>        <span class="s0">if not </span><span class="s1">self.receivers </span><span class="s0">or </span><span class="s1">self.sender_receivers_cache.get(sender) </span><span class="s0">is </span><span class="s1">NO_RECEIVERS:</span>
+<a name="l175"><span class="ln">175  </span></a>            <span class="s0">return </span><span class="s1">[]</span>
+<a name="l176"><span class="ln">176  </span></a>
+<a name="l177"><span class="ln">177  </span></a>        <span class="s0">return </span><span class="s1">[</span>
+<a name="l178"><span class="ln">178  </span></a>            <span class="s1">(receiver</span><span class="s0">, </span><span class="s1">receiver(signal=self</span><span class="s0">, </span><span class="s1">sender=sender</span><span class="s0">, </span><span class="s1">**named))</span>
+<a name="l179"><span class="ln">179  </span></a>            <span class="s0">for </span><span class="s1">receiver </span><span class="s0">in </span><span class="s1">self._live_receivers(sender)</span>
+<a name="l180"><span class="ln">180  </span></a>        <span class="s1">]</span>
+<a name="l181"><span class="ln">181  </span></a>
+<a name="l182"><span class="ln">182  </span></a>    <span class="s0">def </span><span class="s1">send_robust(self</span><span class="s0">, </span><span class="s1">sender</span><span class="s0">, </span><span class="s1">**named):</span>
+<a name="l183"><span class="ln">183  </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l184"><span class="ln">184  </span></a>        Send signal from sender to all connected receivers catching errors. 
+<a name="l185"><span class="ln">185  </span></a> 
+<a name="l186"><span class="ln">186  </span></a>        Arguments: 
+<a name="l187"><span class="ln">187  </span></a> 
+<a name="l188"><span class="ln">188  </span></a>            sender 
+<a name="l189"><span class="ln">189  </span></a>                The sender of the signal. Can be any Python object (normally one 
+<a name="l190"><span class="ln">190  </span></a>                registered with a connect if you actually want something to 
+<a name="l191"><span class="ln">191  </span></a>                occur). 
+<a name="l192"><span class="ln">192  </span></a> 
+<a name="l193"><span class="ln">193  </span></a>            named 
+<a name="l194"><span class="ln">194  </span></a>                Named arguments which will be passed to receivers. 
+<a name="l195"><span class="ln">195  </span></a> 
+<a name="l196"><span class="ln">196  </span></a>        Return a list of tuple pairs [(receiver, response), ... ]. 
+<a name="l197"><span class="ln">197  </span></a> 
+<a name="l198"><span class="ln">198  </span></a>        If any receiver raises an error (specifically any subclass of 
+<a name="l199"><span class="ln">199  </span></a>        Exception), return the error instance as the result for that receiver. 
+<a name="l200"><span class="ln">200  </span></a>        &quot;&quot;&quot;</span>
+<a name="l201"><span class="ln">201  </span></a>        <span class="s0">if not </span><span class="s1">self.receivers </span><span class="s0">or </span><span class="s1">self.sender_receivers_cache.get(sender) </span><span class="s0">is </span><span class="s1">NO_RECEIVERS:</span>
+<a name="l202"><span class="ln">202  </span></a>            <span class="s0">return </span><span class="s1">[]</span>
+<a name="l203"><span class="ln">203  </span></a>
+<a name="l204"><span class="ln">204  </span></a>        <span class="s3"># Call each receiver with whatever arguments it can accept.</span>
+<a name="l205"><span class="ln">205  </span></a>        <span class="s3"># Return a list of tuple pairs [(receiver, response), ... ].</span>
+<a name="l206"><span class="ln">206  </span></a>        <span class="s1">responses = []</span>
+<a name="l207"><span class="ln">207  </span></a>        <span class="s0">for </span><span class="s1">receiver </span><span class="s0">in </span><span class="s1">self._live_receivers(sender):</span>
+<a name="l208"><span class="ln">208  </span></a>            <span class="s0">try</span><span class="s1">:</span>
+<a name="l209"><span class="ln">209  </span></a>                <span class="s1">response = receiver(signal=self</span><span class="s0">, </span><span class="s1">sender=sender</span><span class="s0">, </span><span class="s1">**named)</span>
+<a name="l210"><span class="ln">210  </span></a>            <span class="s0">except </span><span class="s1">Exception </span><span class="s0">as </span><span class="s1">err:</span>
+<a name="l211"><span class="ln">211  </span></a>                <span class="s1">responses.append((receiver</span><span class="s0">, </span><span class="s1">err))</span>
+<a name="l212"><span class="ln">212  </span></a>            <span class="s0">else</span><span class="s1">:</span>
+<a name="l213"><span class="ln">213  </span></a>                <span class="s1">responses.append((receiver</span><span class="s0">, </span><span class="s1">response))</span>
+<a name="l214"><span class="ln">214  </span></a>        <span class="s0">return </span><span class="s1">responses</span>
+<a name="l215"><span class="ln">215  </span></a>
+<a name="l216"><span class="ln">216  </span></a>    <span class="s0">def </span><span class="s1">_clear_dead_receivers(self):</span>
+<a name="l217"><span class="ln">217  </span></a>        <span class="s3"># Note: caller is assumed to hold self.lock.</span>
+<a name="l218"><span class="ln">218  </span></a>        <span class="s0">if </span><span class="s1">self._dead_receivers:</span>
+<a name="l219"><span class="ln">219  </span></a>            <span class="s1">self._dead_receivers = </span><span class="s0">False</span>
+<a name="l220"><span class="ln">220  </span></a>            <span class="s1">self.receivers = [</span>
+<a name="l221"><span class="ln">221  </span></a>                <span class="s1">r </span><span class="s0">for </span><span class="s1">r </span><span class="s0">in </span><span class="s1">self.receivers</span>
+<a name="l222"><span class="ln">222  </span></a>                <span class="s0">if not</span><span class="s1">(isinstance(r[</span><span class="s5">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">weakref.ReferenceType) </span><span class="s0">and </span><span class="s1">r[</span><span class="s5">1</span><span class="s1">]() </span><span class="s0">is None</span><span class="s1">)</span>
+<a name="l223"><span class="ln">223  </span></a>            <span class="s1">]</span>
+<a name="l224"><span class="ln">224  </span></a>
+<a name="l225"><span class="ln">225  </span></a>    <span class="s0">def </span><span class="s1">_live_receivers(self</span><span class="s0">, </span><span class="s1">sender):</span>
+<a name="l226"><span class="ln">226  </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l227"><span class="ln">227  </span></a>        Filter sequence of receivers to get resolved, live receivers. 
+<a name="l228"><span class="ln">228  </span></a> 
+<a name="l229"><span class="ln">229  </span></a>        This checks for weak references and resolves them, then returning only 
+<a name="l230"><span class="ln">230  </span></a>        live receivers. 
+<a name="l231"><span class="ln">231  </span></a>        &quot;&quot;&quot;</span>
+<a name="l232"><span class="ln">232  </span></a>        <span class="s1">receivers = </span><span class="s0">None</span>
+<a name="l233"><span class="ln">233  </span></a>        <span class="s0">if </span><span class="s1">self.use_caching </span><span class="s0">and not </span><span class="s1">self._dead_receivers:</span>
+<a name="l234"><span class="ln">234  </span></a>            <span class="s1">receivers = self.sender_receivers_cache.get(sender)</span>
+<a name="l235"><span class="ln">235  </span></a>            <span class="s3"># We could end up here with NO_RECEIVERS even if we do check this case in</span>
+<a name="l236"><span class="ln">236  </span></a>            <span class="s3"># .send() prior to calling _live_receivers() due to concurrent .send() call.</span>
+<a name="l237"><span class="ln">237  </span></a>            <span class="s0">if </span><span class="s1">receivers </span><span class="s0">is </span><span class="s1">NO_RECEIVERS:</span>
+<a name="l238"><span class="ln">238  </span></a>                <span class="s0">return </span><span class="s1">[]</span>
+<a name="l239"><span class="ln">239  </span></a>        <span class="s0">if </span><span class="s1">receivers </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l240"><span class="ln">240  </span></a>            <span class="s0">with </span><span class="s1">self.lock:</span>
+<a name="l241"><span class="ln">241  </span></a>                <span class="s1">self._clear_dead_receivers()</span>
+<a name="l242"><span class="ln">242  </span></a>                <span class="s1">senderkey = _make_id(sender)</span>
+<a name="l243"><span class="ln">243  </span></a>                <span class="s1">receivers = []</span>
+<a name="l244"><span class="ln">244  </span></a>                <span class="s0">for </span><span class="s1">(receiverkey</span><span class="s0">, </span><span class="s1">r_senderkey)</span><span class="s0">, </span><span class="s1">receiver </span><span class="s0">in </span><span class="s1">self.receivers:</span>
+<a name="l245"><span class="ln">245  </span></a>                    <span class="s0">if </span><span class="s1">r_senderkey == NONE_ID </span><span class="s0">or </span><span class="s1">r_senderkey == senderkey:</span>
+<a name="l246"><span class="ln">246  </span></a>                        <span class="s1">receivers.append(receiver)</span>
+<a name="l247"><span class="ln">247  </span></a>                <span class="s0">if </span><span class="s1">self.use_caching:</span>
+<a name="l248"><span class="ln">248  </span></a>                    <span class="s0">if not </span><span class="s1">receivers:</span>
+<a name="l249"><span class="ln">249  </span></a>                        <span class="s1">self.sender_receivers_cache[sender] = NO_RECEIVERS</span>
+<a name="l250"><span class="ln">250  </span></a>                    <span class="s0">else</span><span class="s1">:</span>
+<a name="l251"><span class="ln">251  </span></a>                        <span class="s3"># Note, we must cache the weakref versions.</span>
+<a name="l252"><span class="ln">252  </span></a>                        <span class="s1">self.sender_receivers_cache[sender] = receivers</span>
+<a name="l253"><span class="ln">253  </span></a>        <span class="s1">non_weak_receivers = []</span>
+<a name="l254"><span class="ln">254  </span></a>        <span class="s0">for </span><span class="s1">receiver </span><span class="s0">in </span><span class="s1">receivers:</span>
+<a name="l255"><span class="ln">255  </span></a>            <span class="s0">if </span><span class="s1">isinstance(receiver</span><span class="s0">, </span><span class="s1">weakref.ReferenceType):</span>
+<a name="l256"><span class="ln">256  </span></a>                <span class="s3"># Dereference the weak reference.</span>
+<a name="l257"><span class="ln">257  </span></a>                <span class="s1">receiver = receiver()</span>
+<a name="l258"><span class="ln">258  </span></a>                <span class="s0">if </span><span class="s1">receiver </span><span class="s0">is not None</span><span class="s1">:</span>
+<a name="l259"><span class="ln">259  </span></a>                    <span class="s1">non_weak_receivers.append(receiver)</span>
+<a name="l260"><span class="ln">260  </span></a>            <span class="s0">else</span><span class="s1">:</span>
+<a name="l261"><span class="ln">261  </span></a>                <span class="s1">non_weak_receivers.append(receiver)</span>
+<a name="l262"><span class="ln">262  </span></a>        <span class="s0">return </span><span class="s1">non_weak_receivers</span>
+<a name="l263"><span class="ln">263  </span></a>
+<a name="l264"><span class="ln">264  </span></a>    <span class="s0">def </span><span class="s1">_remove_receiver(self</span><span class="s0">, </span><span class="s1">receiver=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l265"><span class="ln">265  </span></a>        <span class="s3"># Mark that the self.receivers list has dead weakrefs. If so, we will</span>
+<a name="l266"><span class="ln">266  </span></a>        <span class="s3"># clean those up in connect, disconnect and _live_receivers while</span>
+<a name="l267"><span class="ln">267  </span></a>        <span class="s3"># holding self.lock. Note that doing the cleanup here isn't a good</span>
+<a name="l268"><span class="ln">268  </span></a>        <span class="s3"># idea, _remove_receiver() will be called as side effect of garbage</span>
+<a name="l269"><span class="ln">269  </span></a>        <span class="s3"># collection, and so the call can happen while we are already holding</span>
+<a name="l270"><span class="ln">270  </span></a>        <span class="s3"># self.lock.</span>
+<a name="l271"><span class="ln">271  </span></a>        <span class="s1">self._dead_receivers = </span><span class="s0">True</span>
+<a name="l272"><span class="ln">272  </span></a>
+<a name="l273"><span class="ln">273  </span></a>
+<a name="l274"><span class="ln">274  </span></a><span class="s0">def </span><span class="s1">receiver(signal</span><span class="s0">, </span><span class="s1">**kwargs):</span>
+<a name="l275"><span class="ln">275  </span></a>    <span class="s4">&quot;&quot;&quot; 
+<a name="l276"><span class="ln">276  </span></a>    A decorator for connecting receivers to signals. Used by passing in the 
+<a name="l277"><span class="ln">277  </span></a>    signal (or list of signals) and keyword arguments to connect:: 
+<a name="l278"><span class="ln">278  </span></a> 
+<a name="l279"><span class="ln">279  </span></a>        @receiver(post_save, sender=MyModel) 
+<a name="l280"><span class="ln">280  </span></a>        def signal_receiver(sender, **kwargs): 
+<a name="l281"><span class="ln">281  </span></a>            ... 
+<a name="l282"><span class="ln">282  </span></a> 
+<a name="l283"><span class="ln">283  </span></a>        @receiver([post_save, post_delete], sender=MyModel) 
+<a name="l284"><span class="ln">284  </span></a>        def signals_receiver(sender, **kwargs): 
+<a name="l285"><span class="ln">285  </span></a>            ... 
+<a name="l286"><span class="ln">286  </span></a>    &quot;&quot;&quot;</span>
+<a name="l287"><span class="ln">287  </span></a>    <span class="s0">def </span><span class="s1">_decorator(func):</span>
+<a name="l288"><span class="ln">288  </span></a>        <span class="s0">if </span><span class="s1">isinstance(signal</span><span class="s0">, </span><span class="s1">(list</span><span class="s0">, </span><span class="s1">tuple)):</span>
+<a name="l289"><span class="ln">289  </span></a>            <span class="s0">for </span><span class="s1">s </span><span class="s0">in </span><span class="s1">signal:</span>
+<a name="l290"><span class="ln">290  </span></a>                <span class="s1">s.connect(func</span><span class="s0">, </span><span class="s1">**kwargs)</span>
+<a name="l291"><span class="ln">291  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l292"><span class="ln">292  </span></a>            <span class="s1">signal.connect(func</span><span class="s0">, </span><span class="s1">**kwargs)</span>
+<a name="l293"><span class="ln">293  </span></a>        <span class="s0">return </span><span class="s1">func</span>
+<a name="l294"><span class="ln">294  </span></a>    <span class="s0">return </span><span class="s1">_decorator</span>
+<a name="l295"><span class="ln">295  </span></a></pre>
+</body>
+</html>

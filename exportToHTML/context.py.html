@@ -1,0 +1,301 @@
+<html>
+<head>
+<title>context.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #6a8759;}
+.s4 { color: #629755; font-style: italic;}
+.s5 { color: #6897bb;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+context.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">from </span><span class="s1">contextlib </span><span class="s0">import </span><span class="s1">contextmanager</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">from </span><span class="s1">copy </span><span class="s0">import </span><span class="s1">copy</span>
+<a name="l3"><span class="ln">3    </span></a>
+<a name="l4"><span class="ln">4    </span></a><span class="s2"># Hard-coded processor for easier use of CSRF protection.</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s1">_builtin_context_processors = (</span><span class="s3">'django.template.context_processors.csrf'</span><span class="s0">,</span><span class="s1">)</span>
+<a name="l6"><span class="ln">6    </span></a>
+<a name="l7"><span class="ln">7    </span></a>
+<a name="l8"><span class="ln">8    </span></a><span class="s0">class </span><span class="s1">ContextPopException(Exception):</span>
+<a name="l9"><span class="ln">9    </span></a>    <span class="s4">&quot;pop() has been called more times than push()&quot;</span>
+<a name="l10"><span class="ln">10   </span></a>    <span class="s0">pass</span>
+<a name="l11"><span class="ln">11   </span></a>
+<a name="l12"><span class="ln">12   </span></a>
+<a name="l13"><span class="ln">13   </span></a><span class="s0">class </span><span class="s1">ContextDict(dict):</span>
+<a name="l14"><span class="ln">14   </span></a>    <span class="s0">def </span><span class="s1">__init__(self</span><span class="s0">, </span><span class="s1">context</span><span class="s0">, </span><span class="s1">*args</span><span class="s0">, </span><span class="s1">**kwargs):</span>
+<a name="l15"><span class="ln">15   </span></a>        <span class="s1">super().__init__(*args</span><span class="s0">, </span><span class="s1">**kwargs)</span>
+<a name="l16"><span class="ln">16   </span></a>
+<a name="l17"><span class="ln">17   </span></a>        <span class="s1">context.dicts.append(self)</span>
+<a name="l18"><span class="ln">18   </span></a>        <span class="s1">self.context = context</span>
+<a name="l19"><span class="ln">19   </span></a>
+<a name="l20"><span class="ln">20   </span></a>    <span class="s0">def </span><span class="s1">__enter__(self):</span>
+<a name="l21"><span class="ln">21   </span></a>        <span class="s0">return </span><span class="s1">self</span>
+<a name="l22"><span class="ln">22   </span></a>
+<a name="l23"><span class="ln">23   </span></a>    <span class="s0">def </span><span class="s1">__exit__(self</span><span class="s0">, </span><span class="s1">*args</span><span class="s0">, </span><span class="s1">**kwargs):</span>
+<a name="l24"><span class="ln">24   </span></a>        <span class="s1">self.context.pop()</span>
+<a name="l25"><span class="ln">25   </span></a>
+<a name="l26"><span class="ln">26   </span></a>
+<a name="l27"><span class="ln">27   </span></a><span class="s0">class </span><span class="s1">BaseContext:</span>
+<a name="l28"><span class="ln">28   </span></a>    <span class="s0">def </span><span class="s1">__init__(self</span><span class="s0">, </span><span class="s1">dict_=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l29"><span class="ln">29   </span></a>        <span class="s1">self._reset_dicts(dict_)</span>
+<a name="l30"><span class="ln">30   </span></a>
+<a name="l31"><span class="ln">31   </span></a>    <span class="s0">def </span><span class="s1">_reset_dicts(self</span><span class="s0">, </span><span class="s1">value=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l32"><span class="ln">32   </span></a>        <span class="s1">builtins = {</span><span class="s3">'True'</span><span class="s1">: </span><span class="s0">True, </span><span class="s3">'False'</span><span class="s1">: </span><span class="s0">False, </span><span class="s3">'None'</span><span class="s1">: </span><span class="s0">None</span><span class="s1">}</span>
+<a name="l33"><span class="ln">33   </span></a>        <span class="s1">self.dicts = [builtins]</span>
+<a name="l34"><span class="ln">34   </span></a>        <span class="s0">if </span><span class="s1">value </span><span class="s0">is not None</span><span class="s1">:</span>
+<a name="l35"><span class="ln">35   </span></a>            <span class="s1">self.dicts.append(value)</span>
+<a name="l36"><span class="ln">36   </span></a>
+<a name="l37"><span class="ln">37   </span></a>    <span class="s0">def </span><span class="s1">__copy__(self):</span>
+<a name="l38"><span class="ln">38   </span></a>        <span class="s1">duplicate = copy(super())</span>
+<a name="l39"><span class="ln">39   </span></a>        <span class="s1">duplicate.dicts = self.dicts[:]</span>
+<a name="l40"><span class="ln">40   </span></a>        <span class="s0">return </span><span class="s1">duplicate</span>
+<a name="l41"><span class="ln">41   </span></a>
+<a name="l42"><span class="ln">42   </span></a>    <span class="s0">def </span><span class="s1">__repr__(self):</span>
+<a name="l43"><span class="ln">43   </span></a>        <span class="s0">return </span><span class="s1">repr(self.dicts)</span>
+<a name="l44"><span class="ln">44   </span></a>
+<a name="l45"><span class="ln">45   </span></a>    <span class="s0">def </span><span class="s1">__iter__(self):</span>
+<a name="l46"><span class="ln">46   </span></a>        <span class="s0">return </span><span class="s1">reversed(self.dicts)</span>
+<a name="l47"><span class="ln">47   </span></a>
+<a name="l48"><span class="ln">48   </span></a>    <span class="s0">def </span><span class="s1">push(self</span><span class="s0">, </span><span class="s1">*args</span><span class="s0">, </span><span class="s1">**kwargs):</span>
+<a name="l49"><span class="ln">49   </span></a>        <span class="s1">dicts = []</span>
+<a name="l50"><span class="ln">50   </span></a>        <span class="s0">for </span><span class="s1">d </span><span class="s0">in </span><span class="s1">args:</span>
+<a name="l51"><span class="ln">51   </span></a>            <span class="s0">if </span><span class="s1">isinstance(d</span><span class="s0">, </span><span class="s1">BaseContext):</span>
+<a name="l52"><span class="ln">52   </span></a>                <span class="s1">dicts += d.dicts[</span><span class="s5">1</span><span class="s1">:]</span>
+<a name="l53"><span class="ln">53   </span></a>            <span class="s0">else</span><span class="s1">:</span>
+<a name="l54"><span class="ln">54   </span></a>                <span class="s1">dicts.append(d)</span>
+<a name="l55"><span class="ln">55   </span></a>        <span class="s0">return </span><span class="s1">ContextDict(self</span><span class="s0">, </span><span class="s1">*dicts</span><span class="s0">, </span><span class="s1">**kwargs)</span>
+<a name="l56"><span class="ln">56   </span></a>
+<a name="l57"><span class="ln">57   </span></a>    <span class="s0">def </span><span class="s1">pop(self):</span>
+<a name="l58"><span class="ln">58   </span></a>        <span class="s0">if </span><span class="s1">len(self.dicts) == </span><span class="s5">1</span><span class="s1">:</span>
+<a name="l59"><span class="ln">59   </span></a>            <span class="s0">raise </span><span class="s1">ContextPopException</span>
+<a name="l60"><span class="ln">60   </span></a>        <span class="s0">return </span><span class="s1">self.dicts.pop()</span>
+<a name="l61"><span class="ln">61   </span></a>
+<a name="l62"><span class="ln">62   </span></a>    <span class="s0">def </span><span class="s1">__setitem__(self</span><span class="s0">, </span><span class="s1">key</span><span class="s0">, </span><span class="s1">value):</span>
+<a name="l63"><span class="ln">63   </span></a>        <span class="s4">&quot;Set a variable in the current context&quot;</span>
+<a name="l64"><span class="ln">64   </span></a>        <span class="s1">self.dicts[-</span><span class="s5">1</span><span class="s1">][key] = value</span>
+<a name="l65"><span class="ln">65   </span></a>
+<a name="l66"><span class="ln">66   </span></a>    <span class="s0">def </span><span class="s1">set_upward(self</span><span class="s0">, </span><span class="s1">key</span><span class="s0">, </span><span class="s1">value):</span>
+<a name="l67"><span class="ln">67   </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l68"><span class="ln">68   </span></a>        Set a variable in one of the higher contexts if it exists there, 
+<a name="l69"><span class="ln">69   </span></a>        otherwise in the current context. 
+<a name="l70"><span class="ln">70   </span></a>        &quot;&quot;&quot;</span>
+<a name="l71"><span class="ln">71   </span></a>        <span class="s1">context = self.dicts[-</span><span class="s5">1</span><span class="s1">]</span>
+<a name="l72"><span class="ln">72   </span></a>        <span class="s0">for </span><span class="s1">d </span><span class="s0">in </span><span class="s1">reversed(self.dicts):</span>
+<a name="l73"><span class="ln">73   </span></a>            <span class="s0">if </span><span class="s1">key </span><span class="s0">in </span><span class="s1">d:</span>
+<a name="l74"><span class="ln">74   </span></a>                <span class="s1">context = d</span>
+<a name="l75"><span class="ln">75   </span></a>                <span class="s0">break</span>
+<a name="l76"><span class="ln">76   </span></a>        <span class="s1">context[key] = value</span>
+<a name="l77"><span class="ln">77   </span></a>
+<a name="l78"><span class="ln">78   </span></a>    <span class="s0">def </span><span class="s1">__getitem__(self</span><span class="s0">, </span><span class="s1">key):</span>
+<a name="l79"><span class="ln">79   </span></a>        <span class="s4">&quot;Get a variable's value, starting at the current context and going upward&quot;</span>
+<a name="l80"><span class="ln">80   </span></a>        <span class="s0">for </span><span class="s1">d </span><span class="s0">in </span><span class="s1">reversed(self.dicts):</span>
+<a name="l81"><span class="ln">81   </span></a>            <span class="s0">if </span><span class="s1">key </span><span class="s0">in </span><span class="s1">d:</span>
+<a name="l82"><span class="ln">82   </span></a>                <span class="s0">return </span><span class="s1">d[key]</span>
+<a name="l83"><span class="ln">83   </span></a>        <span class="s0">raise </span><span class="s1">KeyError(key)</span>
+<a name="l84"><span class="ln">84   </span></a>
+<a name="l85"><span class="ln">85   </span></a>    <span class="s0">def </span><span class="s1">__delitem__(self</span><span class="s0">, </span><span class="s1">key):</span>
+<a name="l86"><span class="ln">86   </span></a>        <span class="s4">&quot;Delete a variable from the current context&quot;</span>
+<a name="l87"><span class="ln">87   </span></a>        <span class="s0">del </span><span class="s1">self.dicts[-</span><span class="s5">1</span><span class="s1">][key]</span>
+<a name="l88"><span class="ln">88   </span></a>
+<a name="l89"><span class="ln">89   </span></a>    <span class="s0">def </span><span class="s1">__contains__(self</span><span class="s0">, </span><span class="s1">key):</span>
+<a name="l90"><span class="ln">90   </span></a>        <span class="s0">return </span><span class="s1">any(key </span><span class="s0">in </span><span class="s1">d </span><span class="s0">for </span><span class="s1">d </span><span class="s0">in </span><span class="s1">self.dicts)</span>
+<a name="l91"><span class="ln">91   </span></a>
+<a name="l92"><span class="ln">92   </span></a>    <span class="s0">def </span><span class="s1">get(self</span><span class="s0">, </span><span class="s1">key</span><span class="s0">, </span><span class="s1">otherwise=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l93"><span class="ln">93   </span></a>        <span class="s0">for </span><span class="s1">d </span><span class="s0">in </span><span class="s1">reversed(self.dicts):</span>
+<a name="l94"><span class="ln">94   </span></a>            <span class="s0">if </span><span class="s1">key </span><span class="s0">in </span><span class="s1">d:</span>
+<a name="l95"><span class="ln">95   </span></a>                <span class="s0">return </span><span class="s1">d[key]</span>
+<a name="l96"><span class="ln">96   </span></a>        <span class="s0">return </span><span class="s1">otherwise</span>
+<a name="l97"><span class="ln">97   </span></a>
+<a name="l98"><span class="ln">98   </span></a>    <span class="s0">def </span><span class="s1">setdefault(self</span><span class="s0">, </span><span class="s1">key</span><span class="s0">, </span><span class="s1">default=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l99"><span class="ln">99   </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l100"><span class="ln">100  </span></a>            <span class="s0">return </span><span class="s1">self[key]</span>
+<a name="l101"><span class="ln">101  </span></a>        <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l102"><span class="ln">102  </span></a>            <span class="s1">self[key] = default</span>
+<a name="l103"><span class="ln">103  </span></a>        <span class="s0">return </span><span class="s1">default</span>
+<a name="l104"><span class="ln">104  </span></a>
+<a name="l105"><span class="ln">105  </span></a>    <span class="s0">def </span><span class="s1">new(self</span><span class="s0">, </span><span class="s1">values=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l106"><span class="ln">106  </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l107"><span class="ln">107  </span></a>        Return a new context with the same properties, but with only the 
+<a name="l108"><span class="ln">108  </span></a>        values given in 'values' stored. 
+<a name="l109"><span class="ln">109  </span></a>        &quot;&quot;&quot;</span>
+<a name="l110"><span class="ln">110  </span></a>        <span class="s1">new_context = copy(self)</span>
+<a name="l111"><span class="ln">111  </span></a>        <span class="s1">new_context._reset_dicts(values)</span>
+<a name="l112"><span class="ln">112  </span></a>        <span class="s0">return </span><span class="s1">new_context</span>
+<a name="l113"><span class="ln">113  </span></a>
+<a name="l114"><span class="ln">114  </span></a>    <span class="s0">def </span><span class="s1">flatten(self):</span>
+<a name="l115"><span class="ln">115  </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l116"><span class="ln">116  </span></a>        Return self.dicts as one dictionary. 
+<a name="l117"><span class="ln">117  </span></a>        &quot;&quot;&quot;</span>
+<a name="l118"><span class="ln">118  </span></a>        <span class="s1">flat = {}</span>
+<a name="l119"><span class="ln">119  </span></a>        <span class="s0">for </span><span class="s1">d </span><span class="s0">in </span><span class="s1">self.dicts:</span>
+<a name="l120"><span class="ln">120  </span></a>            <span class="s1">flat.update(d)</span>
+<a name="l121"><span class="ln">121  </span></a>        <span class="s0">return </span><span class="s1">flat</span>
+<a name="l122"><span class="ln">122  </span></a>
+<a name="l123"><span class="ln">123  </span></a>    <span class="s0">def </span><span class="s1">__eq__(self</span><span class="s0">, </span><span class="s1">other):</span>
+<a name="l124"><span class="ln">124  </span></a>        <span class="s4">&quot;&quot;&quot; 
+<a name="l125"><span class="ln">125  </span></a>        Compare two contexts by comparing theirs 'dicts' attributes. 
+<a name="l126"><span class="ln">126  </span></a>        &quot;&quot;&quot;</span>
+<a name="l127"><span class="ln">127  </span></a>        <span class="s0">if not </span><span class="s1">isinstance(other</span><span class="s0">, </span><span class="s1">BaseContext):</span>
+<a name="l128"><span class="ln">128  </span></a>            <span class="s0">return </span><span class="s1">NotImplemented</span>
+<a name="l129"><span class="ln">129  </span></a>        <span class="s2"># flatten dictionaries because they can be put in a different order.</span>
+<a name="l130"><span class="ln">130  </span></a>        <span class="s0">return </span><span class="s1">self.flatten() == other.flatten()</span>
+<a name="l131"><span class="ln">131  </span></a>
+<a name="l132"><span class="ln">132  </span></a>
+<a name="l133"><span class="ln">133  </span></a><span class="s0">class </span><span class="s1">Context(BaseContext):</span>
+<a name="l134"><span class="ln">134  </span></a>    <span class="s4">&quot;A stack container for variable context&quot;</span>
+<a name="l135"><span class="ln">135  </span></a>    <span class="s0">def </span><span class="s1">__init__(self</span><span class="s0">, </span><span class="s1">dict_=</span><span class="s0">None, </span><span class="s1">autoescape=</span><span class="s0">True, </span><span class="s1">use_l10n=</span><span class="s0">None, </span><span class="s1">use_tz=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l136"><span class="ln">136  </span></a>        <span class="s1">self.autoescape = autoescape</span>
+<a name="l137"><span class="ln">137  </span></a>        <span class="s1">self.use_l10n = use_l10n</span>
+<a name="l138"><span class="ln">138  </span></a>        <span class="s1">self.use_tz = use_tz</span>
+<a name="l139"><span class="ln">139  </span></a>        <span class="s1">self.template_name = </span><span class="s3">&quot;unknown&quot;</span>
+<a name="l140"><span class="ln">140  </span></a>        <span class="s1">self.render_context = RenderContext()</span>
+<a name="l141"><span class="ln">141  </span></a>        <span class="s2"># Set to the original template -- as opposed to extended or included</span>
+<a name="l142"><span class="ln">142  </span></a>        <span class="s2"># templates -- during rendering, see bind_template.</span>
+<a name="l143"><span class="ln">143  </span></a>        <span class="s1">self.template = </span><span class="s0">None</span>
+<a name="l144"><span class="ln">144  </span></a>        <span class="s1">super().__init__(dict_)</span>
+<a name="l145"><span class="ln">145  </span></a>
+<a name="l146"><span class="ln">146  </span></a>    <span class="s1">@contextmanager</span>
+<a name="l147"><span class="ln">147  </span></a>    <span class="s0">def </span><span class="s1">bind_template(self</span><span class="s0">, </span><span class="s1">template):</span>
+<a name="l148"><span class="ln">148  </span></a>        <span class="s0">if </span><span class="s1">self.template </span><span class="s0">is not None</span><span class="s1">:</span>
+<a name="l149"><span class="ln">149  </span></a>            <span class="s0">raise </span><span class="s1">RuntimeError(</span><span class="s3">&quot;Context is already bound to a template&quot;</span><span class="s1">)</span>
+<a name="l150"><span class="ln">150  </span></a>        <span class="s1">self.template = template</span>
+<a name="l151"><span class="ln">151  </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l152"><span class="ln">152  </span></a>            <span class="s0">yield</span>
+<a name="l153"><span class="ln">153  </span></a>        <span class="s0">finally</span><span class="s1">:</span>
+<a name="l154"><span class="ln">154  </span></a>            <span class="s1">self.template = </span><span class="s0">None</span>
+<a name="l155"><span class="ln">155  </span></a>
+<a name="l156"><span class="ln">156  </span></a>    <span class="s0">def </span><span class="s1">__copy__(self):</span>
+<a name="l157"><span class="ln">157  </span></a>        <span class="s1">duplicate = super().__copy__()</span>
+<a name="l158"><span class="ln">158  </span></a>        <span class="s1">duplicate.render_context = copy(self.render_context)</span>
+<a name="l159"><span class="ln">159  </span></a>        <span class="s0">return </span><span class="s1">duplicate</span>
+<a name="l160"><span class="ln">160  </span></a>
+<a name="l161"><span class="ln">161  </span></a>    <span class="s0">def </span><span class="s1">update(self</span><span class="s0">, </span><span class="s1">other_dict):</span>
+<a name="l162"><span class="ln">162  </span></a>        <span class="s4">&quot;Push other_dict to the stack of dictionaries in the Context&quot;</span>
+<a name="l163"><span class="ln">163  </span></a>        <span class="s0">if not </span><span class="s1">hasattr(other_dict</span><span class="s0">, </span><span class="s3">'__getitem__'</span><span class="s1">):</span>
+<a name="l164"><span class="ln">164  </span></a>            <span class="s0">raise </span><span class="s1">TypeError(</span><span class="s3">'other_dict must be a mapping (dictionary-like) object.'</span><span class="s1">)</span>
+<a name="l165"><span class="ln">165  </span></a>        <span class="s0">if </span><span class="s1">isinstance(other_dict</span><span class="s0">, </span><span class="s1">BaseContext):</span>
+<a name="l166"><span class="ln">166  </span></a>            <span class="s1">other_dict = other_dict.dicts[</span><span class="s5">1</span><span class="s1">:].pop()</span>
+<a name="l167"><span class="ln">167  </span></a>        <span class="s0">return </span><span class="s1">ContextDict(self</span><span class="s0">, </span><span class="s1">other_dict)</span>
+<a name="l168"><span class="ln">168  </span></a>
+<a name="l169"><span class="ln">169  </span></a>
+<a name="l170"><span class="ln">170  </span></a><span class="s0">class </span><span class="s1">RenderContext(BaseContext):</span>
+<a name="l171"><span class="ln">171  </span></a>    <span class="s4">&quot;&quot;&quot; 
+<a name="l172"><span class="ln">172  </span></a>    A stack container for storing Template state. 
+<a name="l173"><span class="ln">173  </span></a> 
+<a name="l174"><span class="ln">174  </span></a>    RenderContext simplifies the implementation of template Nodes by providing a 
+<a name="l175"><span class="ln">175  </span></a>    safe place to store state between invocations of a node's `render` method. 
+<a name="l176"><span class="ln">176  </span></a> 
+<a name="l177"><span class="ln">177  </span></a>    The RenderContext also provides scoping rules that are more sensible for 
+<a name="l178"><span class="ln">178  </span></a>    'template local' variables. The render context stack is pushed before each 
+<a name="l179"><span class="ln">179  </span></a>    template is rendered, creating a fresh scope with nothing in it. Name 
+<a name="l180"><span class="ln">180  </span></a>    resolution fails if a variable is not found at the top of the RequestContext 
+<a name="l181"><span class="ln">181  </span></a>    stack. Thus, variables are local to a specific template and don't affect the 
+<a name="l182"><span class="ln">182  </span></a>    rendering of other templates as they would if they were stored in the normal 
+<a name="l183"><span class="ln">183  </span></a>    template context. 
+<a name="l184"><span class="ln">184  </span></a>    &quot;&quot;&quot;</span>
+<a name="l185"><span class="ln">185  </span></a>    <span class="s1">template = </span><span class="s0">None</span>
+<a name="l186"><span class="ln">186  </span></a>
+<a name="l187"><span class="ln">187  </span></a>    <span class="s0">def </span><span class="s1">__iter__(self):</span>
+<a name="l188"><span class="ln">188  </span></a>        <span class="s0">yield from </span><span class="s1">self.dicts[-</span><span class="s5">1</span><span class="s1">]</span>
+<a name="l189"><span class="ln">189  </span></a>
+<a name="l190"><span class="ln">190  </span></a>    <span class="s0">def </span><span class="s1">__contains__(self</span><span class="s0">, </span><span class="s1">key):</span>
+<a name="l191"><span class="ln">191  </span></a>        <span class="s0">return </span><span class="s1">key </span><span class="s0">in </span><span class="s1">self.dicts[-</span><span class="s5">1</span><span class="s1">]</span>
+<a name="l192"><span class="ln">192  </span></a>
+<a name="l193"><span class="ln">193  </span></a>    <span class="s0">def </span><span class="s1">get(self</span><span class="s0">, </span><span class="s1">key</span><span class="s0">, </span><span class="s1">otherwise=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l194"><span class="ln">194  </span></a>        <span class="s0">return </span><span class="s1">self.dicts[-</span><span class="s5">1</span><span class="s1">].get(key</span><span class="s0">, </span><span class="s1">otherwise)</span>
+<a name="l195"><span class="ln">195  </span></a>
+<a name="l196"><span class="ln">196  </span></a>    <span class="s0">def </span><span class="s1">__getitem__(self</span><span class="s0">, </span><span class="s1">key):</span>
+<a name="l197"><span class="ln">197  </span></a>        <span class="s0">return </span><span class="s1">self.dicts[-</span><span class="s5">1</span><span class="s1">][key]</span>
+<a name="l198"><span class="ln">198  </span></a>
+<a name="l199"><span class="ln">199  </span></a>    <span class="s1">@contextmanager</span>
+<a name="l200"><span class="ln">200  </span></a>    <span class="s0">def </span><span class="s1">push_state(self</span><span class="s0">, </span><span class="s1">template</span><span class="s0">, </span><span class="s1">isolated_context=</span><span class="s0">True</span><span class="s1">):</span>
+<a name="l201"><span class="ln">201  </span></a>        <span class="s1">initial = self.template</span>
+<a name="l202"><span class="ln">202  </span></a>        <span class="s1">self.template = template</span>
+<a name="l203"><span class="ln">203  </span></a>        <span class="s0">if </span><span class="s1">isolated_context:</span>
+<a name="l204"><span class="ln">204  </span></a>            <span class="s1">self.push()</span>
+<a name="l205"><span class="ln">205  </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l206"><span class="ln">206  </span></a>            <span class="s0">yield</span>
+<a name="l207"><span class="ln">207  </span></a>        <span class="s0">finally</span><span class="s1">:</span>
+<a name="l208"><span class="ln">208  </span></a>            <span class="s1">self.template = initial</span>
+<a name="l209"><span class="ln">209  </span></a>            <span class="s0">if </span><span class="s1">isolated_context:</span>
+<a name="l210"><span class="ln">210  </span></a>                <span class="s1">self.pop()</span>
+<a name="l211"><span class="ln">211  </span></a>
+<a name="l212"><span class="ln">212  </span></a>
+<a name="l213"><span class="ln">213  </span></a><span class="s0">class </span><span class="s1">RequestContext(Context):</span>
+<a name="l214"><span class="ln">214  </span></a>    <span class="s4">&quot;&quot;&quot; 
+<a name="l215"><span class="ln">215  </span></a>    This subclass of template.Context automatically populates itself using 
+<a name="l216"><span class="ln">216  </span></a>    the processors defined in the engine's configuration. 
+<a name="l217"><span class="ln">217  </span></a>    Additional processors can be specified as a list of callables 
+<a name="l218"><span class="ln">218  </span></a>    using the &quot;processors&quot; keyword argument. 
+<a name="l219"><span class="ln">219  </span></a>    &quot;&quot;&quot;</span>
+<a name="l220"><span class="ln">220  </span></a>    <span class="s0">def </span><span class="s1">__init__(self</span><span class="s0">, </span><span class="s1">request</span><span class="s0">, </span><span class="s1">dict_=</span><span class="s0">None, </span><span class="s1">processors=</span><span class="s0">None, </span><span class="s1">use_l10n=</span><span class="s0">None, </span><span class="s1">use_tz=</span><span class="s0">None, </span><span class="s1">autoescape=</span><span class="s0">True</span><span class="s1">):</span>
+<a name="l221"><span class="ln">221  </span></a>        <span class="s1">super().__init__(dict_</span><span class="s0">, </span><span class="s1">use_l10n=use_l10n</span><span class="s0">, </span><span class="s1">use_tz=use_tz</span><span class="s0">, </span><span class="s1">autoescape=autoescape)</span>
+<a name="l222"><span class="ln">222  </span></a>        <span class="s1">self.request = request</span>
+<a name="l223"><span class="ln">223  </span></a>        <span class="s1">self._processors = () </span><span class="s0">if </span><span class="s1">processors </span><span class="s0">is None else </span><span class="s1">tuple(processors)</span>
+<a name="l224"><span class="ln">224  </span></a>        <span class="s1">self._processors_index = len(self.dicts)</span>
+<a name="l225"><span class="ln">225  </span></a>
+<a name="l226"><span class="ln">226  </span></a>        <span class="s2"># placeholder for context processors output</span>
+<a name="l227"><span class="ln">227  </span></a>        <span class="s1">self.update({})</span>
+<a name="l228"><span class="ln">228  </span></a>
+<a name="l229"><span class="ln">229  </span></a>        <span class="s2"># empty dict for any new modifications</span>
+<a name="l230"><span class="ln">230  </span></a>        <span class="s2"># (so that context processors don't overwrite them)</span>
+<a name="l231"><span class="ln">231  </span></a>        <span class="s1">self.update({})</span>
+<a name="l232"><span class="ln">232  </span></a>
+<a name="l233"><span class="ln">233  </span></a>    <span class="s1">@contextmanager</span>
+<a name="l234"><span class="ln">234  </span></a>    <span class="s0">def </span><span class="s1">bind_template(self</span><span class="s0">, </span><span class="s1">template):</span>
+<a name="l235"><span class="ln">235  </span></a>        <span class="s0">if </span><span class="s1">self.template </span><span class="s0">is not None</span><span class="s1">:</span>
+<a name="l236"><span class="ln">236  </span></a>            <span class="s0">raise </span><span class="s1">RuntimeError(</span><span class="s3">&quot;Context is already bound to a template&quot;</span><span class="s1">)</span>
+<a name="l237"><span class="ln">237  </span></a>
+<a name="l238"><span class="ln">238  </span></a>        <span class="s1">self.template = template</span>
+<a name="l239"><span class="ln">239  </span></a>        <span class="s2"># Set context processors according to the template engine's settings.</span>
+<a name="l240"><span class="ln">240  </span></a>        <span class="s1">processors = (template.engine.template_context_processors +</span>
+<a name="l241"><span class="ln">241  </span></a>                      <span class="s1">self._processors)</span>
+<a name="l242"><span class="ln">242  </span></a>        <span class="s1">updates = {}</span>
+<a name="l243"><span class="ln">243  </span></a>        <span class="s0">for </span><span class="s1">processor </span><span class="s0">in </span><span class="s1">processors:</span>
+<a name="l244"><span class="ln">244  </span></a>            <span class="s1">updates.update(processor(self.request))</span>
+<a name="l245"><span class="ln">245  </span></a>        <span class="s1">self.dicts[self._processors_index] = updates</span>
+<a name="l246"><span class="ln">246  </span></a>
+<a name="l247"><span class="ln">247  </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l248"><span class="ln">248  </span></a>            <span class="s0">yield</span>
+<a name="l249"><span class="ln">249  </span></a>        <span class="s0">finally</span><span class="s1">:</span>
+<a name="l250"><span class="ln">250  </span></a>            <span class="s1">self.template = </span><span class="s0">None</span>
+<a name="l251"><span class="ln">251  </span></a>            <span class="s2"># Unset context processors.</span>
+<a name="l252"><span class="ln">252  </span></a>            <span class="s1">self.dicts[self._processors_index] = {}</span>
+<a name="l253"><span class="ln">253  </span></a>
+<a name="l254"><span class="ln">254  </span></a>    <span class="s0">def </span><span class="s1">new(self</span><span class="s0">, </span><span class="s1">values=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l255"><span class="ln">255  </span></a>        <span class="s1">new_context = super().new(values)</span>
+<a name="l256"><span class="ln">256  </span></a>        <span class="s2"># This is for backwards-compatibility: RequestContexts created via</span>
+<a name="l257"><span class="ln">257  </span></a>        <span class="s2"># Context.new don't include values from context processors.</span>
+<a name="l258"><span class="ln">258  </span></a>        <span class="s0">if </span><span class="s1">hasattr(new_context</span><span class="s0">, </span><span class="s3">'_processors_index'</span><span class="s1">):</span>
+<a name="l259"><span class="ln">259  </span></a>            <span class="s0">del </span><span class="s1">new_context._processors_index</span>
+<a name="l260"><span class="ln">260  </span></a>        <span class="s0">return </span><span class="s1">new_context</span>
+<a name="l261"><span class="ln">261  </span></a>
+<a name="l262"><span class="ln">262  </span></a>
+<a name="l263"><span class="ln">263  </span></a><span class="s0">def </span><span class="s1">make_context(context</span><span class="s0">, </span><span class="s1">request=</span><span class="s0">None, </span><span class="s1">**kwargs):</span>
+<a name="l264"><span class="ln">264  </span></a>    <span class="s4">&quot;&quot;&quot; 
+<a name="l265"><span class="ln">265  </span></a>    Create a suitable Context from a plain dict and optionally an HttpRequest. 
+<a name="l266"><span class="ln">266  </span></a>    &quot;&quot;&quot;</span>
+<a name="l267"><span class="ln">267  </span></a>    <span class="s0">if </span><span class="s1">context </span><span class="s0">is not None and not </span><span class="s1">isinstance(context</span><span class="s0">, </span><span class="s1">dict):</span>
+<a name="l268"><span class="ln">268  </span></a>        <span class="s0">raise </span><span class="s1">TypeError(</span><span class="s3">'context must be a dict rather than %s.' </span><span class="s1">% context.__class__.__name__)</span>
+<a name="l269"><span class="ln">269  </span></a>    <span class="s0">if </span><span class="s1">request </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l270"><span class="ln">270  </span></a>        <span class="s1">context = Context(context</span><span class="s0">, </span><span class="s1">**kwargs)</span>
+<a name="l271"><span class="ln">271  </span></a>    <span class="s0">else</span><span class="s1">:</span>
+<a name="l272"><span class="ln">272  </span></a>        <span class="s2"># The following pattern is required to ensure values from</span>
+<a name="l273"><span class="ln">273  </span></a>        <span class="s2"># context override those from template context processors.</span>
+<a name="l274"><span class="ln">274  </span></a>        <span class="s1">original_context = context</span>
+<a name="l275"><span class="ln">275  </span></a>        <span class="s1">context = RequestContext(request</span><span class="s0">, </span><span class="s1">**kwargs)</span>
+<a name="l276"><span class="ln">276  </span></a>        <span class="s0">if </span><span class="s1">original_context:</span>
+<a name="l277"><span class="ln">277  </span></a>            <span class="s1">context.push(original_context)</span>
+<a name="l278"><span class="ln">278  </span></a>    <span class="s0">return </span><span class="s1">context</span>
+<a name="l279"><span class="ln">279  </span></a></pre>
+</body>
+</html>

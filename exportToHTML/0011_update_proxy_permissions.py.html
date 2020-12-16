@@ -1,0 +1,90 @@
+<html>
+<head>
+<title>0011_update_proxy_permissions.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #629755; font-style: italic;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+0011_update_proxy_permissions.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">import </span><span class="s1">sys</span>
+<a name="l2"><span class="ln">2    </span></a>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">from </span><span class="s1">django.core.management.color </span><span class="s0">import </span><span class="s1">color_style</span>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">from </span><span class="s1">django.db </span><span class="s0">import </span><span class="s1">IntegrityError</span><span class="s0">, </span><span class="s1">migrations</span><span class="s0">, </span><span class="s1">transaction</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s0">from </span><span class="s1">django.db.models </span><span class="s0">import </span><span class="s1">Q</span>
+<a name="l6"><span class="ln">6    </span></a>
+<a name="l7"><span class="ln">7    </span></a><span class="s1">WARNING = </span><span class="s2">&quot;&quot;&quot; 
+<a name="l8"><span class="ln">8    </span></a>    A problem arose migrating proxy model permissions for {old} to {new}. 
+<a name="l9"><span class="ln">9    </span></a> 
+<a name="l10"><span class="ln">10   </span></a>      Permission(s) for {new} already existed. 
+<a name="l11"><span class="ln">11   </span></a>      Codenames Q: {query} 
+<a name="l12"><span class="ln">12   </span></a> 
+<a name="l13"><span class="ln">13   </span></a>    Ensure to audit ALL permissions for {old} and {new}. 
+<a name="l14"><span class="ln">14   </span></a>&quot;&quot;&quot;</span>
+<a name="l15"><span class="ln">15   </span></a>
+<a name="l16"><span class="ln">16   </span></a>
+<a name="l17"><span class="ln">17   </span></a><span class="s0">def </span><span class="s1">update_proxy_model_permissions(apps</span><span class="s0">, </span><span class="s1">schema_editor</span><span class="s0">, </span><span class="s1">reverse=</span><span class="s0">False</span><span class="s1">):</span>
+<a name="l18"><span class="ln">18   </span></a>    <span class="s3">&quot;&quot;&quot; 
+<a name="l19"><span class="ln">19   </span></a>    Update the content_type of proxy model permissions to use the ContentType 
+<a name="l20"><span class="ln">20   </span></a>    of the proxy model. 
+<a name="l21"><span class="ln">21   </span></a>    &quot;&quot;&quot;</span>
+<a name="l22"><span class="ln">22   </span></a>    <span class="s1">style = color_style()</span>
+<a name="l23"><span class="ln">23   </span></a>    <span class="s1">Permission = apps.get_model(</span><span class="s2">'auth'</span><span class="s0">, </span><span class="s2">'Permission'</span><span class="s1">)</span>
+<a name="l24"><span class="ln">24   </span></a>    <span class="s1">ContentType = apps.get_model(</span><span class="s2">'contenttypes'</span><span class="s0">, </span><span class="s2">'ContentType'</span><span class="s1">)</span>
+<a name="l25"><span class="ln">25   </span></a>    <span class="s1">alias = schema_editor.connection.alias</span>
+<a name="l26"><span class="ln">26   </span></a>    <span class="s0">for </span><span class="s1">Model </span><span class="s0">in </span><span class="s1">apps.get_models():</span>
+<a name="l27"><span class="ln">27   </span></a>        <span class="s1">opts = Model._meta</span>
+<a name="l28"><span class="ln">28   </span></a>        <span class="s0">if not </span><span class="s1">opts.proxy:</span>
+<a name="l29"><span class="ln">29   </span></a>            <span class="s0">continue</span>
+<a name="l30"><span class="ln">30   </span></a>        <span class="s1">proxy_default_permissions_codenames = [</span>
+<a name="l31"><span class="ln">31   </span></a>            <span class="s2">'%s_%s' </span><span class="s1">% (action</span><span class="s0">, </span><span class="s1">opts.model_name)</span>
+<a name="l32"><span class="ln">32   </span></a>            <span class="s0">for </span><span class="s1">action </span><span class="s0">in </span><span class="s1">opts.default_permissions</span>
+<a name="l33"><span class="ln">33   </span></a>        <span class="s1">]</span>
+<a name="l34"><span class="ln">34   </span></a>        <span class="s1">permissions_query = Q(codename__in=proxy_default_permissions_codenames)</span>
+<a name="l35"><span class="ln">35   </span></a>        <span class="s0">for </span><span class="s1">codename</span><span class="s0">, </span><span class="s1">name </span><span class="s0">in </span><span class="s1">opts.permissions:</span>
+<a name="l36"><span class="ln">36   </span></a>            <span class="s1">permissions_query = permissions_query | Q(codename=codename</span><span class="s0">, </span><span class="s1">name=name)</span>
+<a name="l37"><span class="ln">37   </span></a>        <span class="s1">content_type_manager = ContentType.objects.db_manager(alias)</span>
+<a name="l38"><span class="ln">38   </span></a>        <span class="s1">concrete_content_type = content_type_manager.get_for_model(Model</span><span class="s0">, </span><span class="s1">for_concrete_model=</span><span class="s0">True</span><span class="s1">)</span>
+<a name="l39"><span class="ln">39   </span></a>        <span class="s1">proxy_content_type = content_type_manager.get_for_model(Model</span><span class="s0">, </span><span class="s1">for_concrete_model=</span><span class="s0">False</span><span class="s1">)</span>
+<a name="l40"><span class="ln">40   </span></a>        <span class="s1">old_content_type = proxy_content_type </span><span class="s0">if </span><span class="s1">reverse </span><span class="s0">else </span><span class="s1">concrete_content_type</span>
+<a name="l41"><span class="ln">41   </span></a>        <span class="s1">new_content_type = concrete_content_type </span><span class="s0">if </span><span class="s1">reverse </span><span class="s0">else </span><span class="s1">proxy_content_type</span>
+<a name="l42"><span class="ln">42   </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l43"><span class="ln">43   </span></a>            <span class="s0">with </span><span class="s1">transaction.atomic(using=alias):</span>
+<a name="l44"><span class="ln">44   </span></a>                <span class="s1">Permission.objects.using(alias).filter(</span>
+<a name="l45"><span class="ln">45   </span></a>                    <span class="s1">permissions_query</span><span class="s0">,</span>
+<a name="l46"><span class="ln">46   </span></a>                    <span class="s1">content_type=old_content_type</span><span class="s0">,</span>
+<a name="l47"><span class="ln">47   </span></a>                <span class="s1">).update(content_type=new_content_type)</span>
+<a name="l48"><span class="ln">48   </span></a>        <span class="s0">except </span><span class="s1">IntegrityError:</span>
+<a name="l49"><span class="ln">49   </span></a>            <span class="s1">old = </span><span class="s2">'{}_{}'</span><span class="s1">.format(old_content_type.app_label</span><span class="s0">, </span><span class="s1">old_content_type.model)</span>
+<a name="l50"><span class="ln">50   </span></a>            <span class="s1">new = </span><span class="s2">'{}_{}'</span><span class="s1">.format(new_content_type.app_label</span><span class="s0">, </span><span class="s1">new_content_type.model)</span>
+<a name="l51"><span class="ln">51   </span></a>            <span class="s1">sys.stdout.write(style.WARNING(WARNING.format(old=old</span><span class="s0">, </span><span class="s1">new=new</span><span class="s0">, </span><span class="s1">query=permissions_query)))</span>
+<a name="l52"><span class="ln">52   </span></a>
+<a name="l53"><span class="ln">53   </span></a>
+<a name="l54"><span class="ln">54   </span></a><span class="s0">def </span><span class="s1">revert_proxy_model_permissions(apps</span><span class="s0">, </span><span class="s1">schema_editor):</span>
+<a name="l55"><span class="ln">55   </span></a>    <span class="s3">&quot;&quot;&quot; 
+<a name="l56"><span class="ln">56   </span></a>    Update the content_type of proxy model permissions to use the ContentType 
+<a name="l57"><span class="ln">57   </span></a>    of the concrete model. 
+<a name="l58"><span class="ln">58   </span></a>    &quot;&quot;&quot;</span>
+<a name="l59"><span class="ln">59   </span></a>    <span class="s1">update_proxy_model_permissions(apps</span><span class="s0">, </span><span class="s1">schema_editor</span><span class="s0">, </span><span class="s1">reverse=</span><span class="s0">True</span><span class="s1">)</span>
+<a name="l60"><span class="ln">60   </span></a>
+<a name="l61"><span class="ln">61   </span></a>
+<a name="l62"><span class="ln">62   </span></a><span class="s0">class </span><span class="s1">Migration(migrations.Migration):</span>
+<a name="l63"><span class="ln">63   </span></a>    <span class="s1">dependencies = [</span>
+<a name="l64"><span class="ln">64   </span></a>        <span class="s1">(</span><span class="s2">'auth'</span><span class="s0">, </span><span class="s2">'0010_alter_group_name_max_length'</span><span class="s1">)</span><span class="s0">,</span>
+<a name="l65"><span class="ln">65   </span></a>        <span class="s1">(</span><span class="s2">'contenttypes'</span><span class="s0">, </span><span class="s2">'0002_remove_content_type_name'</span><span class="s1">)</span><span class="s0">,</span>
+<a name="l66"><span class="ln">66   </span></a>    <span class="s1">]</span>
+<a name="l67"><span class="ln">67   </span></a>    <span class="s1">operations = [</span>
+<a name="l68"><span class="ln">68   </span></a>        <span class="s1">migrations.RunPython(update_proxy_model_permissions</span><span class="s0">, </span><span class="s1">revert_proxy_model_permissions)</span><span class="s0">,</span>
+<a name="l69"><span class="ln">69   </span></a>    <span class="s1">]</span>
+<a name="l70"><span class="ln">70   </span></a></pre>
+</body>
+</html>

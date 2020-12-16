@@ -1,0 +1,47 @@
+<html>
+<head>
+<title>stacked.html</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #a9b7c6;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #e8bf6a;}
+.s3 { color: #bababa;}
+.s4 { color: #a5c261;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+stacked.html</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">{% load i18n admin_urls static %}</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;js-inline-admin-formset inline-group&quot;</span>
+<a name="l3"><span class="ln">3    </span></a>     <span class="s3">id</span><span class="s4">=&quot;{{ inline_admin_formset.formset.prefix }}-group&quot;</span>
+<a name="l4"><span class="ln">4    </span></a>     <span class="s3">data-inline-type</span><span class="s4">=&quot;stacked&quot;</span>
+<a name="l5"><span class="ln">5    </span></a>     <span class="s3">data-inline-formset</span><span class="s4">=&quot;{{ inline_admin_formset.inline_formset_data }}&quot;</span><span class="s2">&gt;</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s2">&lt;fieldset </span><span class="s3">class</span><span class="s4">=&quot;module {{ inline_admin_formset.classes }}&quot;</span><span class="s2">&gt;</span>
+<a name="l7"><span class="ln">7    </span></a>  <span class="s2">&lt;h2&gt;</span><span class="s0">{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</span><span class="s2">&lt;/h2&gt;</span>
+<a name="l8"><span class="ln">8    </span></a><span class="s0">{{ inline_admin_formset.formset.management_form }}</span>
+<a name="l9"><span class="ln">9    </span></a><span class="s0">{{ inline_admin_formset.formset.non_form_errors }}</span>
+<a name="l10"><span class="ln">10   </span></a>
+<a name="l11"><span class="ln">11   </span></a><span class="s0">{% for inline_admin_form in inline_admin_formset %}</span><span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;inline-related{% if inline_admin_form.original or inline_admin_form.show_url %} has_original{% endif %}{% if forloop.last and inline_admin_formset.has_add_permission %} empty-form last-related{% endif %}&quot; </span><span class="s3">id</span><span class="s4">=&quot;{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}&quot;</span><span class="s2">&gt;</span>
+<a name="l12"><span class="ln">12   </span></a>  <span class="s2">&lt;h3&gt;&lt;b&gt;</span><span class="s0">{{ inline_admin_formset.opts.verbose_name|capfirst }}:</span><span class="s2">&lt;/b&gt; &lt;span </span><span class="s3">class</span><span class="s4">=&quot;inline_label&quot;</span><span class="s2">&gt;</span><span class="s0">{% if inline_admin_form.original %}{{ inline_admin_form.original }}{% if inline_admin_form.model_admin.show_change_link and inline_admin_form.model_admin.has_registered_model %} </span><span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url inline_admin_form.model_admin.opts|admin_urlname:'change' inline_admin_form.original.pk|admin_urlquote %}&quot; </span><span class="s3">class</span><span class="s4">=&quot;{% if inline_admin_formset.has_change_permission %}inlinechangelink{% else %}inlineviewlink{% endif %}&quot;</span><span class="s2">&gt;</span><span class="s0">{% if inline_admin_formset.has_change_permission %}{% translate &quot;Change&quot; %}{% else %}{% translate &quot;View&quot; %}{% endif %}</span><span class="s2">&lt;/a&gt;</span><span class="s0">{% endif %}</span>
+<a name="l13"><span class="ln">13   </span></a><span class="s0">{% else %}#{{ forloop.counter }}{% endif %}</span><span class="s2">&lt;/span&gt;</span>
+<a name="l14"><span class="ln">14   </span></a>      <span class="s0">{% if inline_admin_form.show_url %}</span><span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{{ inline_admin_form.absolute_url }}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate &quot;View on site&quot; %}</span><span class="s2">&lt;/a&gt;</span><span class="s0">{% endif %}</span>
+<a name="l15"><span class="ln">15   </span></a>    <span class="s0">{% if inline_admin_formset.formset.can_delete and inline_admin_formset.has_delete_permission and inline_admin_form.original %}</span><span class="s2">&lt;span </span><span class="s3">class</span><span class="s4">=&quot;delete&quot;</span><span class="s2">&gt;</span><span class="s0">{{ inline_admin_form.deletion_field.field }} {{ inline_admin_form.deletion_field.label_tag }}</span><span class="s2">&lt;/span&gt;</span><span class="s0">{% endif %}</span>
+<a name="l16"><span class="ln">16   </span></a>  <span class="s2">&lt;/h3&gt;</span>
+<a name="l17"><span class="ln">17   </span></a>  <span class="s0">{% if inline_admin_form.form.non_field_errors %}{{ inline_admin_form.form.non_field_errors }}{% endif %}</span>
+<a name="l18"><span class="ln">18   </span></a>  <span class="s0">{% for fieldset in inline_admin_form %}</span>
+<a name="l19"><span class="ln">19   </span></a>    <span class="s0">{% include &quot;admin/includes/fieldset.html&quot; %}</span>
+<a name="l20"><span class="ln">20   </span></a>  <span class="s0">{% endfor %}</span>
+<a name="l21"><span class="ln">21   </span></a>  <span class="s0">{% if inline_admin_form.needs_explicit_pk_field %}{{ inline_admin_form.pk_field.field }}{% endif %}</span>
+<a name="l22"><span class="ln">22   </span></a>  <span class="s0">{% if inline_admin_form.fk_field %}{{ inline_admin_form.fk_field.field }}{% endif %}</span>
+<a name="l23"><span class="ln">23   </span></a><span class="s2">&lt;/div&gt;</span><span class="s0">{% endfor %}</span>
+<a name="l24"><span class="ln">24   </span></a><span class="s2">&lt;/fieldset&gt;</span>
+<a name="l25"><span class="ln">25   </span></a><span class="s2">&lt;/div&gt;</span>
+<a name="l26"><span class="ln">26   </span></a></pre>
+</body>
+</html>

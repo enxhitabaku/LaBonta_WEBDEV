@@ -1,0 +1,66 @@
+<html>
+<head>
+<title>duration.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6897bb;}
+.s3 { color: #629755; font-style: italic;}
+.s4 { color: #6a8759;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+duration.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">import </span><span class="s1">datetime</span>
+<a name="l2"><span class="ln">2    </span></a>
+<a name="l3"><span class="ln">3    </span></a>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">def </span><span class="s1">_get_duration_components(duration):</span>
+<a name="l5"><span class="ln">5    </span></a>    <span class="s1">days = duration.days</span>
+<a name="l6"><span class="ln">6    </span></a>    <span class="s1">seconds = duration.seconds</span>
+<a name="l7"><span class="ln">7    </span></a>    <span class="s1">microseconds = duration.microseconds</span>
+<a name="l8"><span class="ln">8    </span></a>
+<a name="l9"><span class="ln">9    </span></a>    <span class="s1">minutes = seconds // </span><span class="s2">60</span>
+<a name="l10"><span class="ln">10   </span></a>    <span class="s1">seconds = seconds % </span><span class="s2">60</span>
+<a name="l11"><span class="ln">11   </span></a>
+<a name="l12"><span class="ln">12   </span></a>    <span class="s1">hours = minutes // </span><span class="s2">60</span>
+<a name="l13"><span class="ln">13   </span></a>    <span class="s1">minutes = minutes % </span><span class="s2">60</span>
+<a name="l14"><span class="ln">14   </span></a>
+<a name="l15"><span class="ln">15   </span></a>    <span class="s0">return </span><span class="s1">days</span><span class="s0">, </span><span class="s1">hours</span><span class="s0">, </span><span class="s1">minutes</span><span class="s0">, </span><span class="s1">seconds</span><span class="s0">, </span><span class="s1">microseconds</span>
+<a name="l16"><span class="ln">16   </span></a>
+<a name="l17"><span class="ln">17   </span></a>
+<a name="l18"><span class="ln">18   </span></a><span class="s0">def </span><span class="s1">duration_string(duration):</span>
+<a name="l19"><span class="ln">19   </span></a>    <span class="s3">&quot;&quot;&quot;Version of str(timedelta) which is not English specific.&quot;&quot;&quot;</span>
+<a name="l20"><span class="ln">20   </span></a>    <span class="s1">days</span><span class="s0">, </span><span class="s1">hours</span><span class="s0">, </span><span class="s1">minutes</span><span class="s0">, </span><span class="s1">seconds</span><span class="s0">, </span><span class="s1">microseconds = _get_duration_components(duration)</span>
+<a name="l21"><span class="ln">21   </span></a>
+<a name="l22"><span class="ln">22   </span></a>    <span class="s1">string = </span><span class="s4">'{:02d}:{:02d}:{:02d}'</span><span class="s1">.format(hours</span><span class="s0">, </span><span class="s1">minutes</span><span class="s0">, </span><span class="s1">seconds)</span>
+<a name="l23"><span class="ln">23   </span></a>    <span class="s0">if </span><span class="s1">days:</span>
+<a name="l24"><span class="ln">24   </span></a>        <span class="s1">string = </span><span class="s4">'{} '</span><span class="s1">.format(days) + string</span>
+<a name="l25"><span class="ln">25   </span></a>    <span class="s0">if </span><span class="s1">microseconds:</span>
+<a name="l26"><span class="ln">26   </span></a>        <span class="s1">string += </span><span class="s4">'.{:06d}'</span><span class="s1">.format(microseconds)</span>
+<a name="l27"><span class="ln">27   </span></a>
+<a name="l28"><span class="ln">28   </span></a>    <span class="s0">return </span><span class="s1">string</span>
+<a name="l29"><span class="ln">29   </span></a>
+<a name="l30"><span class="ln">30   </span></a>
+<a name="l31"><span class="ln">31   </span></a><span class="s0">def </span><span class="s1">duration_iso_string(duration):</span>
+<a name="l32"><span class="ln">32   </span></a>    <span class="s0">if </span><span class="s1">duration &lt; datetime.timedelta(</span><span class="s2">0</span><span class="s1">):</span>
+<a name="l33"><span class="ln">33   </span></a>        <span class="s1">sign = </span><span class="s4">'-'</span>
+<a name="l34"><span class="ln">34   </span></a>        <span class="s1">duration *= -</span><span class="s2">1</span>
+<a name="l35"><span class="ln">35   </span></a>    <span class="s0">else</span><span class="s1">:</span>
+<a name="l36"><span class="ln">36   </span></a>        <span class="s1">sign = </span><span class="s4">''</span>
+<a name="l37"><span class="ln">37   </span></a>
+<a name="l38"><span class="ln">38   </span></a>    <span class="s1">days</span><span class="s0">, </span><span class="s1">hours</span><span class="s0">, </span><span class="s1">minutes</span><span class="s0">, </span><span class="s1">seconds</span><span class="s0">, </span><span class="s1">microseconds = _get_duration_components(duration)</span>
+<a name="l39"><span class="ln">39   </span></a>    <span class="s1">ms = </span><span class="s4">'.{:06d}'</span><span class="s1">.format(microseconds) </span><span class="s0">if </span><span class="s1">microseconds </span><span class="s0">else </span><span class="s4">&quot;&quot;</span>
+<a name="l40"><span class="ln">40   </span></a>    <span class="s0">return </span><span class="s4">'{}P{}DT{:02d}H{:02d}M{:02d}{}S'</span><span class="s1">.format(sign</span><span class="s0">, </span><span class="s1">days</span><span class="s0">, </span><span class="s1">hours</span><span class="s0">, </span><span class="s1">minutes</span><span class="s0">, </span><span class="s1">seconds</span><span class="s0">, </span><span class="s1">ms)</span>
+<a name="l41"><span class="ln">41   </span></a>
+<a name="l42"><span class="ln">42   </span></a>
+<a name="l43"><span class="ln">43   </span></a><span class="s0">def </span><span class="s1">duration_microseconds(delta):</span>
+<a name="l44"><span class="ln">44   </span></a>    <span class="s0">return </span><span class="s1">(</span><span class="s2">24 </span><span class="s1">* </span><span class="s2">60 </span><span class="s1">* </span><span class="s2">60 </span><span class="s1">* delta.days + delta.seconds) * </span><span class="s2">1000000 </span><span class="s1">+ delta.microseconds</span>
+<a name="l45"><span class="ln">45   </span></a></pre>
+</body>
+</html>

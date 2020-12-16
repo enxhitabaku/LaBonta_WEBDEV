@@ -1,0 +1,243 @@
+<html>
+<head>
+<title>jslex.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #629755; font-style: italic;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #cc7832;}
+.s4 { color: #6897bb;}
+.s5 { color: #6a8759;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+jslex.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">&quot;&quot;&quot;JsLex: a lexer for Javascript&quot;&quot;&quot;</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s2"># Originally from https://bitbucket.org/ned/jslex</span>
+<a name="l3"><span class="ln">3    </span></a><span class="s3">import </span><span class="s1">re</span>
+<a name="l4"><span class="ln">4    </span></a>
+<a name="l5"><span class="ln">5    </span></a>
+<a name="l6"><span class="ln">6    </span></a><span class="s3">class </span><span class="s1">Tok:</span>
+<a name="l7"><span class="ln">7    </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l8"><span class="ln">8    </span></a>    A specification for a token class. 
+<a name="l9"><span class="ln">9    </span></a>    &quot;&quot;&quot;</span>
+<a name="l10"><span class="ln">10   </span></a>    <span class="s1">num = </span><span class="s4">0</span>
+<a name="l11"><span class="ln">11   </span></a>
+<a name="l12"><span class="ln">12   </span></a>    <span class="s3">def </span><span class="s1">__init__(self</span><span class="s3">, </span><span class="s1">name</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">, </span><span class="s1">next=</span><span class="s3">None</span><span class="s1">):</span>
+<a name="l13"><span class="ln">13   </span></a>        <span class="s1">self.id = Tok.num</span>
+<a name="l14"><span class="ln">14   </span></a>        <span class="s1">Tok.num += </span><span class="s4">1</span>
+<a name="l15"><span class="ln">15   </span></a>        <span class="s1">self.name = name</span>
+<a name="l16"><span class="ln">16   </span></a>        <span class="s1">self.regex = regex</span>
+<a name="l17"><span class="ln">17   </span></a>        <span class="s1">self.next = next</span>
+<a name="l18"><span class="ln">18   </span></a>
+<a name="l19"><span class="ln">19   </span></a>
+<a name="l20"><span class="ln">20   </span></a><span class="s3">def </span><span class="s1">literals(choices</span><span class="s3">, </span><span class="s1">prefix=</span><span class="s5">&quot;&quot;</span><span class="s3">, </span><span class="s1">suffix=</span><span class="s5">&quot;&quot;</span><span class="s1">):</span>
+<a name="l21"><span class="ln">21   </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l22"><span class="ln">22   </span></a>    Create a regex from a space-separated list of literal `choices`. 
+<a name="l23"><span class="ln">23   </span></a> 
+<a name="l24"><span class="ln">24   </span></a>    If provided, `prefix` and `suffix` will be attached to each choice 
+<a name="l25"><span class="ln">25   </span></a>    individually. 
+<a name="l26"><span class="ln">26   </span></a>    &quot;&quot;&quot;</span>
+<a name="l27"><span class="ln">27   </span></a>    <span class="s3">return </span><span class="s5">&quot;|&quot;</span><span class="s1">.join(prefix + re.escape(c) + suffix </span><span class="s3">for </span><span class="s1">c </span><span class="s3">in </span><span class="s1">choices.split())</span>
+<a name="l28"><span class="ln">28   </span></a>
+<a name="l29"><span class="ln">29   </span></a>
+<a name="l30"><span class="ln">30   </span></a><span class="s3">class </span><span class="s1">Lexer:</span>
+<a name="l31"><span class="ln">31   </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l32"><span class="ln">32   </span></a>    A generic multi-state regex-based lexer. 
+<a name="l33"><span class="ln">33   </span></a>    &quot;&quot;&quot;</span>
+<a name="l34"><span class="ln">34   </span></a>
+<a name="l35"><span class="ln">35   </span></a>    <span class="s3">def </span><span class="s1">__init__(self</span><span class="s3">, </span><span class="s1">states</span><span class="s3">, </span><span class="s1">first):</span>
+<a name="l36"><span class="ln">36   </span></a>        <span class="s1">self.regexes = {}</span>
+<a name="l37"><span class="ln">37   </span></a>        <span class="s1">self.toks = {}</span>
+<a name="l38"><span class="ln">38   </span></a>
+<a name="l39"><span class="ln">39   </span></a>        <span class="s3">for </span><span class="s1">state</span><span class="s3">, </span><span class="s1">rules </span><span class="s3">in </span><span class="s1">states.items():</span>
+<a name="l40"><span class="ln">40   </span></a>            <span class="s1">parts = []</span>
+<a name="l41"><span class="ln">41   </span></a>            <span class="s3">for </span><span class="s1">tok </span><span class="s3">in </span><span class="s1">rules:</span>
+<a name="l42"><span class="ln">42   </span></a>                <span class="s1">groupid = </span><span class="s5">&quot;t%d&quot; </span><span class="s1">% tok.id</span>
+<a name="l43"><span class="ln">43   </span></a>                <span class="s1">self.toks[groupid] = tok</span>
+<a name="l44"><span class="ln">44   </span></a>                <span class="s1">parts.append(</span><span class="s5">&quot;(?P&lt;%s&gt;%s)&quot; </span><span class="s1">% (groupid</span><span class="s3">, </span><span class="s1">tok.regex))</span>
+<a name="l45"><span class="ln">45   </span></a>            <span class="s1">self.regexes[state] = re.compile(</span><span class="s5">&quot;|&quot;</span><span class="s1">.join(parts)</span><span class="s3">, </span><span class="s1">re.MULTILINE | re.VERBOSE)</span>
+<a name="l46"><span class="ln">46   </span></a>
+<a name="l47"><span class="ln">47   </span></a>        <span class="s1">self.state = first</span>
+<a name="l48"><span class="ln">48   </span></a>
+<a name="l49"><span class="ln">49   </span></a>    <span class="s3">def </span><span class="s1">lex(self</span><span class="s3">, </span><span class="s1">text):</span>
+<a name="l50"><span class="ln">50   </span></a>        <span class="s0">&quot;&quot;&quot; 
+<a name="l51"><span class="ln">51   </span></a>        Lexically analyze `text`. 
+<a name="l52"><span class="ln">52   </span></a> 
+<a name="l53"><span class="ln">53   </span></a>        Yield pairs (`name`, `tokentext`). 
+<a name="l54"><span class="ln">54   </span></a>        &quot;&quot;&quot;</span>
+<a name="l55"><span class="ln">55   </span></a>        <span class="s1">end = len(text)</span>
+<a name="l56"><span class="ln">56   </span></a>        <span class="s1">state = self.state</span>
+<a name="l57"><span class="ln">57   </span></a>        <span class="s1">regexes = self.regexes</span>
+<a name="l58"><span class="ln">58   </span></a>        <span class="s1">toks = self.toks</span>
+<a name="l59"><span class="ln">59   </span></a>        <span class="s1">start = </span><span class="s4">0</span>
+<a name="l60"><span class="ln">60   </span></a>
+<a name="l61"><span class="ln">61   </span></a>        <span class="s3">while </span><span class="s1">start &lt; end:</span>
+<a name="l62"><span class="ln">62   </span></a>            <span class="s3">for </span><span class="s1">match </span><span class="s3">in </span><span class="s1">regexes[state].finditer(text</span><span class="s3">, </span><span class="s1">start):</span>
+<a name="l63"><span class="ln">63   </span></a>                <span class="s1">name = match.lastgroup</span>
+<a name="l64"><span class="ln">64   </span></a>                <span class="s1">tok = toks[name]</span>
+<a name="l65"><span class="ln">65   </span></a>                <span class="s1">toktext = match[name]</span>
+<a name="l66"><span class="ln">66   </span></a>                <span class="s1">start += len(toktext)</span>
+<a name="l67"><span class="ln">67   </span></a>                <span class="s3">yield </span><span class="s1">(tok.name</span><span class="s3">, </span><span class="s1">toktext)</span>
+<a name="l68"><span class="ln">68   </span></a>
+<a name="l69"><span class="ln">69   </span></a>                <span class="s3">if </span><span class="s1">tok.next:</span>
+<a name="l70"><span class="ln">70   </span></a>                    <span class="s1">state = tok.next</span>
+<a name="l71"><span class="ln">71   </span></a>                    <span class="s3">break</span>
+<a name="l72"><span class="ln">72   </span></a>
+<a name="l73"><span class="ln">73   </span></a>        <span class="s1">self.state = state</span>
+<a name="l74"><span class="ln">74   </span></a>
+<a name="l75"><span class="ln">75   </span></a>
+<a name="l76"><span class="ln">76   </span></a><span class="s3">class </span><span class="s1">JsLexer(Lexer):</span>
+<a name="l77"><span class="ln">77   </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l78"><span class="ln">78   </span></a>    A Javascript lexer 
+<a name="l79"><span class="ln">79   </span></a> 
+<a name="l80"><span class="ln">80   </span></a>    &gt;&gt;&gt; lexer = JsLexer() 
+<a name="l81"><span class="ln">81   </span></a>    &gt;&gt;&gt; list(lexer.lex(&quot;a = 1&quot;)) 
+<a name="l82"><span class="ln">82   </span></a>    [('id', 'a'), ('ws', ' '), ('punct', '='), ('ws', ' '), ('dnum', '1')] 
+<a name="l83"><span class="ln">83   </span></a> 
+<a name="l84"><span class="ln">84   </span></a>    This doesn't properly handle non-ASCII characters in the Javascript source. 
+<a name="l85"><span class="ln">85   </span></a>    &quot;&quot;&quot;</span>
+<a name="l86"><span class="ln">86   </span></a>
+<a name="l87"><span class="ln">87   </span></a>    <span class="s2"># Because these tokens are matched as alternatives in a regex, longer</span>
+<a name="l88"><span class="ln">88   </span></a>    <span class="s2"># possibilities must appear in the list before shorter ones, for example,</span>
+<a name="l89"><span class="ln">89   </span></a>    <span class="s2"># '&gt;&gt;' before '&gt;'.</span>
+<a name="l90"><span class="ln">90   </span></a>    <span class="s2">#</span>
+<a name="l91"><span class="ln">91   </span></a>    <span class="s2"># Note that we don't have to detect malformed Javascript, only properly</span>
+<a name="l92"><span class="ln">92   </span></a>    <span class="s2"># lex correct Javascript, so much of this is simplified.</span>
+<a name="l93"><span class="ln">93   </span></a>
+<a name="l94"><span class="ln">94   </span></a>    <span class="s2"># Details of Javascript lexical structure are taken from</span>
+<a name="l95"><span class="ln">95   </span></a>    <span class="s2"># http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-262.pdf</span>
+<a name="l96"><span class="ln">96   </span></a>
+<a name="l97"><span class="ln">97   </span></a>    <span class="s2"># A useful explanation of automatic semicolon insertion is at</span>
+<a name="l98"><span class="ln">98   </span></a>    <span class="s2"># http://inimino.org/~inimino/blog/javascript_semicolons</span>
+<a name="l99"><span class="ln">99   </span></a>
+<a name="l100"><span class="ln">100  </span></a>    <span class="s1">both_before = [</span>
+<a name="l101"><span class="ln">101  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;comment&quot;</span><span class="s3">, </span><span class="s5">r&quot;/\*(.|\n)*?\*/&quot;</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l102"><span class="ln">102  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;linecomment&quot;</span><span class="s3">, </span><span class="s5">r&quot;//.*?$&quot;</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l103"><span class="ln">103  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;ws&quot;</span><span class="s3">, </span><span class="s5">r&quot;\s+&quot;</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l104"><span class="ln">104  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;keyword&quot;</span><span class="s3">, </span><span class="s1">literals(</span><span class="s5">&quot;&quot;&quot; 
+<a name="l105"><span class="ln">105  </span></a>                           break case catch class const continue debugger 
+<a name="l106"><span class="ln">106  </span></a>                           default delete do else enum export extends 
+<a name="l107"><span class="ln">107  </span></a>                           finally for function if import in instanceof 
+<a name="l108"><span class="ln">108  </span></a>                           new return super switch this throw try typeof 
+<a name="l109"><span class="ln">109  </span></a>                           var void while with 
+<a name="l110"><span class="ln">110  </span></a>                           &quot;&quot;&quot;</span><span class="s3">, </span><span class="s1">suffix=</span><span class="s5">r&quot;\b&quot;</span><span class="s1">)</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'reg'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l111"><span class="ln">111  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;reserved&quot;</span><span class="s3">, </span><span class="s1">literals(</span><span class="s5">&quot;null true false&quot;</span><span class="s3">, </span><span class="s1">suffix=</span><span class="s5">r&quot;\b&quot;</span><span class="s1">)</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'div'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l112"><span class="ln">112  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;id&quot;</span><span class="s3">, </span><span class="s5">r&quot;&quot;&quot; 
+<a name="l113"><span class="ln">113  </span></a>                  ([a-zA-Z_$   ]|\\u[0-9a-fA-Z]{4})   # first char 
+<a name="l114"><span class="ln">114  </span></a>                  ([a-zA-Z_$0-9]|\\u[0-9a-fA-F]{4})*  # rest chars 
+<a name="l115"><span class="ln">115  </span></a>                  &quot;&quot;&quot;</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'div'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l116"><span class="ln">116  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;hnum&quot;</span><span class="s3">, </span><span class="s5">r&quot;0[xX][0-9a-fA-F]+&quot;</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'div'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l117"><span class="ln">117  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;onum&quot;</span><span class="s3">, </span><span class="s5">r&quot;0[0-7]+&quot;</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l118"><span class="ln">118  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;dnum&quot;</span><span class="s3">, </span><span class="s5">r&quot;&quot;&quot; 
+<a name="l119"><span class="ln">119  </span></a>                    (   (0|[1-9][0-9]*)     # DecimalIntegerLiteral 
+<a name="l120"><span class="ln">120  </span></a>                        \.                  # dot 
+<a name="l121"><span class="ln">121  </span></a>                        [0-9]*              # DecimalDigits-opt 
+<a name="l122"><span class="ln">122  </span></a>                        ([eE][-+]?[0-9]+)?  # ExponentPart-opt 
+<a name="l123"><span class="ln">123  </span></a>                    | 
+<a name="l124"><span class="ln">124  </span></a>                        \.                  # dot 
+<a name="l125"><span class="ln">125  </span></a>                        [0-9]+              # DecimalDigits 
+<a name="l126"><span class="ln">126  </span></a>                        ([eE][-+]?[0-9]+)?  # ExponentPart-opt 
+<a name="l127"><span class="ln">127  </span></a>                    | 
+<a name="l128"><span class="ln">128  </span></a>                        (0|[1-9][0-9]*)     # DecimalIntegerLiteral 
+<a name="l129"><span class="ln">129  </span></a>                        ([eE][-+]?[0-9]+)?  # ExponentPart-opt 
+<a name="l130"><span class="ln">130  </span></a>                    ) 
+<a name="l131"><span class="ln">131  </span></a>                    &quot;&quot;&quot;</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'div'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l132"><span class="ln">132  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;punct&quot;</span><span class="s3">, </span><span class="s1">literals(</span><span class="s5">&quot;&quot;&quot; 
+<a name="l133"><span class="ln">133  </span></a>                         &gt;&gt;&gt;= === !== &gt;&gt;&gt; &lt;&lt;= &gt;&gt;= &lt;= &gt;= == != &lt;&lt; &gt;&gt; &amp;&amp; 
+<a name="l134"><span class="ln">134  </span></a>                         || += -= *= %= &amp;= |= ^= 
+<a name="l135"><span class="ln">135  </span></a>                         &quot;&quot;&quot;</span><span class="s1">)</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">&quot;reg&quot;</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l136"><span class="ln">136  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;punct&quot;</span><span class="s3">, </span><span class="s1">literals(</span><span class="s5">&quot;++ -- ) ]&quot;</span><span class="s1">)</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'div'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l137"><span class="ln">137  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;punct&quot;</span><span class="s3">, </span><span class="s1">literals(</span><span class="s5">&quot;{ } ( [ . ; , &lt; &gt; + - * % &amp; | ^ ! ~ ? : =&quot;</span><span class="s1">)</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'reg'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l138"><span class="ln">138  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;string&quot;</span><span class="s3">, </span><span class="s5">r'&quot;([^&quot;\\]|(\\(.|\n)))*?&quot;'</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'div'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l139"><span class="ln">139  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;string&quot;</span><span class="s3">, </span><span class="s5">r&quot;'([^'\\]|(\\(.|\n)))*?'&quot;</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'div'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l140"><span class="ln">140  </span></a>    <span class="s1">]</span>
+<a name="l141"><span class="ln">141  </span></a>
+<a name="l142"><span class="ln">142  </span></a>    <span class="s1">both_after = [</span>
+<a name="l143"><span class="ln">143  </span></a>        <span class="s1">Tok(</span><span class="s5">&quot;other&quot;</span><span class="s3">, </span><span class="s5">r&quot;.&quot;</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l144"><span class="ln">144  </span></a>    <span class="s1">]</span>
+<a name="l145"><span class="ln">145  </span></a>
+<a name="l146"><span class="ln">146  </span></a>    <span class="s1">states = {</span>
+<a name="l147"><span class="ln">147  </span></a>        <span class="s2"># slash will mean division</span>
+<a name="l148"><span class="ln">148  </span></a>        <span class="s5">'div'</span><span class="s1">: both_before + [</span>
+<a name="l149"><span class="ln">149  </span></a>            <span class="s1">Tok(</span><span class="s5">&quot;punct&quot;</span><span class="s3">, </span><span class="s1">literals(</span><span class="s5">&quot;/= /&quot;</span><span class="s1">)</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'reg'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l150"><span class="ln">150  </span></a>        <span class="s1">] + both_after</span><span class="s3">,</span>
+<a name="l151"><span class="ln">151  </span></a>
+<a name="l152"><span class="ln">152  </span></a>        <span class="s2"># slash will mean regex</span>
+<a name="l153"><span class="ln">153  </span></a>        <span class="s5">'reg'</span><span class="s1">: both_before + [</span>
+<a name="l154"><span class="ln">154  </span></a>            <span class="s1">Tok(</span><span class="s5">&quot;regex&quot;</span><span class="s3">,</span>
+<a name="l155"><span class="ln">155  </span></a>                <span class="s5">r&quot;&quot;&quot; 
+<a name="l156"><span class="ln">156  </span></a>                    /                       # opening slash 
+<a name="l157"><span class="ln">157  </span></a>                    # First character is.. 
+<a name="l158"><span class="ln">158  </span></a>                    (   [^*\\/[]            # anything but * \ / or [ 
+<a name="l159"><span class="ln">159  </span></a>                    |   \\.                 # or an escape sequence 
+<a name="l160"><span class="ln">160  </span></a>                    |   \[                  # or a class, which has 
+<a name="l161"><span class="ln">161  </span></a>                            (   [^\]\\]     #   anything but \ or ] 
+<a name="l162"><span class="ln">162  </span></a>                            |   \\.         #   or an escape sequence 
+<a name="l163"><span class="ln">163  </span></a>                            )*              #   many times 
+<a name="l164"><span class="ln">164  </span></a>                        \] 
+<a name="l165"><span class="ln">165  </span></a>                    ) 
+<a name="l166"><span class="ln">166  </span></a>                    # Following characters are same, except for excluding a star 
+<a name="l167"><span class="ln">167  </span></a>                    (   [^\\/[]             # anything but \ / or [ 
+<a name="l168"><span class="ln">168  </span></a>                    |   \\.                 # or an escape sequence 
+<a name="l169"><span class="ln">169  </span></a>                    |   \[                  # or a class, which has 
+<a name="l170"><span class="ln">170  </span></a>                            (   [^\]\\]     #   anything but \ or ] 
+<a name="l171"><span class="ln">171  </span></a>                            |   \\.         #   or an escape sequence 
+<a name="l172"><span class="ln">172  </span></a>                            )*              #   many times 
+<a name="l173"><span class="ln">173  </span></a>                        \] 
+<a name="l174"><span class="ln">174  </span></a>                    )*                      # many times 
+<a name="l175"><span class="ln">175  </span></a>                    /                       # closing slash 
+<a name="l176"><span class="ln">176  </span></a>                    [a-zA-Z0-9]*            # trailing flags 
+<a name="l177"><span class="ln">177  </span></a>                &quot;&quot;&quot;</span><span class="s3">, </span><span class="s1">next=</span><span class="s5">'div'</span><span class="s1">)</span><span class="s3">,</span>
+<a name="l178"><span class="ln">178  </span></a>        <span class="s1">] + both_after</span><span class="s3">,</span>
+<a name="l179"><span class="ln">179  </span></a>    <span class="s1">}</span>
+<a name="l180"><span class="ln">180  </span></a>
+<a name="l181"><span class="ln">181  </span></a>    <span class="s3">def </span><span class="s1">__init__(self):</span>
+<a name="l182"><span class="ln">182  </span></a>        <span class="s1">super().__init__(self.states</span><span class="s3">, </span><span class="s5">'reg'</span><span class="s1">)</span>
+<a name="l183"><span class="ln">183  </span></a>
+<a name="l184"><span class="ln">184  </span></a>
+<a name="l185"><span class="ln">185  </span></a><span class="s3">def </span><span class="s1">prepare_js_for_gettext(js):</span>
+<a name="l186"><span class="ln">186  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l187"><span class="ln">187  </span></a>    Convert the Javascript source `js` into something resembling C for 
+<a name="l188"><span class="ln">188  </span></a>    xgettext. 
+<a name="l189"><span class="ln">189  </span></a> 
+<a name="l190"><span class="ln">190  </span></a>    What actually happens is that all the regex literals are replaced with 
+<a name="l191"><span class="ln">191  </span></a>    &quot;REGEX&quot;. 
+<a name="l192"><span class="ln">192  </span></a>    &quot;&quot;&quot;</span>
+<a name="l193"><span class="ln">193  </span></a>    <span class="s3">def </span><span class="s1">escape_quotes(m):</span>
+<a name="l194"><span class="ln">194  </span></a>        <span class="s0">&quot;&quot;&quot;Used in a regex to properly escape double quotes.&quot;&quot;&quot;</span>
+<a name="l195"><span class="ln">195  </span></a>        <span class="s1">s = m[</span><span class="s4">0</span><span class="s1">]</span>
+<a name="l196"><span class="ln">196  </span></a>        <span class="s3">if </span><span class="s1">s == </span><span class="s5">'&quot;'</span><span class="s1">:</span>
+<a name="l197"><span class="ln">197  </span></a>            <span class="s3">return </span><span class="s5">r'\&quot;'</span>
+<a name="l198"><span class="ln">198  </span></a>        <span class="s3">else</span><span class="s1">:</span>
+<a name="l199"><span class="ln">199  </span></a>            <span class="s3">return </span><span class="s1">s</span>
+<a name="l200"><span class="ln">200  </span></a>
+<a name="l201"><span class="ln">201  </span></a>    <span class="s1">lexer = JsLexer()</span>
+<a name="l202"><span class="ln">202  </span></a>    <span class="s1">c = []</span>
+<a name="l203"><span class="ln">203  </span></a>    <span class="s3">for </span><span class="s1">name</span><span class="s3">, </span><span class="s1">tok </span><span class="s3">in </span><span class="s1">lexer.lex(js):</span>
+<a name="l204"><span class="ln">204  </span></a>        <span class="s3">if </span><span class="s1">name == </span><span class="s5">'regex'</span><span class="s1">:</span>
+<a name="l205"><span class="ln">205  </span></a>            <span class="s2"># C doesn't grok regexes, and they aren't needed for gettext,</span>
+<a name="l206"><span class="ln">206  </span></a>            <span class="s2"># so just output a string instead.</span>
+<a name="l207"><span class="ln">207  </span></a>            <span class="s1">tok = </span><span class="s5">'&quot;REGEX&quot;'</span>
+<a name="l208"><span class="ln">208  </span></a>        <span class="s3">elif </span><span class="s1">name == </span><span class="s5">'string'</span><span class="s1">:</span>
+<a name="l209"><span class="ln">209  </span></a>            <span class="s2"># C doesn't have single-quoted strings, so make all strings</span>
+<a name="l210"><span class="ln">210  </span></a>            <span class="s2"># double-quoted.</span>
+<a name="l211"><span class="ln">211  </span></a>            <span class="s3">if </span><span class="s1">tok.startswith(</span><span class="s5">&quot;'&quot;</span><span class="s1">):</span>
+<a name="l212"><span class="ln">212  </span></a>                <span class="s1">guts = re.sub(</span><span class="s5">r&quot;\\.|.&quot;</span><span class="s3">, </span><span class="s1">escape_quotes</span><span class="s3">, </span><span class="s1">tok[</span><span class="s4">1</span><span class="s1">:-</span><span class="s4">1</span><span class="s1">])</span>
+<a name="l213"><span class="ln">213  </span></a>                <span class="s1">tok = </span><span class="s5">'&quot;' </span><span class="s1">+ guts + </span><span class="s5">'&quot;'</span>
+<a name="l214"><span class="ln">214  </span></a>        <span class="s3">elif </span><span class="s1">name == </span><span class="s5">'id'</span><span class="s1">:</span>
+<a name="l215"><span class="ln">215  </span></a>            <span class="s2"># C can't deal with Unicode escapes in identifiers.  We don't</span>
+<a name="l216"><span class="ln">216  </span></a>            <span class="s2"># need them for gettext anyway, so replace them with something</span>
+<a name="l217"><span class="ln">217  </span></a>            <span class="s2"># innocuous</span>
+<a name="l218"><span class="ln">218  </span></a>            <span class="s1">tok = tok.replace(</span><span class="s5">&quot;</span><span class="s3">\\</span><span class="s5">&quot;</span><span class="s3">, </span><span class="s5">&quot;U&quot;</span><span class="s1">)</span>
+<a name="l219"><span class="ln">219  </span></a>        <span class="s1">c.append(tok)</span>
+<a name="l220"><span class="ln">220  </span></a>    <span class="s3">return </span><span class="s5">''</span><span class="s1">.join(c)</span>
+<a name="l221"><span class="ln">221  </span></a></pre>
+</body>
+</html>

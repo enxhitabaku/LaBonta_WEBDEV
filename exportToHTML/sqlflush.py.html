@@ -1,0 +1,46 @@
+<html>
+<head>
+<title>sqlflush.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #6897bb;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+sqlflush.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">from </span><span class="s1">django.core.management.base </span><span class="s0">import </span><span class="s1">BaseCommand</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">from </span><span class="s1">django.core.management.sql </span><span class="s0">import </span><span class="s1">sql_flush</span>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">from </span><span class="s1">django.db </span><span class="s0">import </span><span class="s1">DEFAULT_DB_ALIAS</span><span class="s0">, </span><span class="s1">connections</span>
+<a name="l4"><span class="ln">4    </span></a>
+<a name="l5"><span class="ln">5    </span></a>
+<a name="l6"><span class="ln">6    </span></a><span class="s0">class </span><span class="s1">Command(BaseCommand):</span>
+<a name="l7"><span class="ln">7    </span></a>    <span class="s1">help = (</span>
+<a name="l8"><span class="ln">8    </span></a>        <span class="s2">&quot;Returns a list of the SQL statements required to return all tables in &quot;</span>
+<a name="l9"><span class="ln">9    </span></a>        <span class="s2">&quot;the database to the state they were in just after they were installed.&quot;</span>
+<a name="l10"><span class="ln">10   </span></a>    <span class="s1">)</span>
+<a name="l11"><span class="ln">11   </span></a>
+<a name="l12"><span class="ln">12   </span></a>    <span class="s1">output_transaction = </span><span class="s0">True</span>
+<a name="l13"><span class="ln">13   </span></a>
+<a name="l14"><span class="ln">14   </span></a>    <span class="s0">def </span><span class="s1">add_arguments(self</span><span class="s0">, </span><span class="s1">parser):</span>
+<a name="l15"><span class="ln">15   </span></a>        <span class="s1">super().add_arguments(parser)</span>
+<a name="l16"><span class="ln">16   </span></a>        <span class="s1">parser.add_argument(</span>
+<a name="l17"><span class="ln">17   </span></a>            <span class="s2">'--database'</span><span class="s0">, </span><span class="s1">default=DEFAULT_DB_ALIAS</span><span class="s0">,</span>
+<a name="l18"><span class="ln">18   </span></a>            <span class="s1">help=</span><span class="s2">'Nominates a database to print the SQL for. Defaults to the &quot;default&quot; database.'</span><span class="s0">,</span>
+<a name="l19"><span class="ln">19   </span></a>        <span class="s1">)</span>
+<a name="l20"><span class="ln">20   </span></a>
+<a name="l21"><span class="ln">21   </span></a>    <span class="s0">def </span><span class="s1">handle(self</span><span class="s0">, </span><span class="s1">**options):</span>
+<a name="l22"><span class="ln">22   </span></a>        <span class="s1">sql_statements = sql_flush(self.style</span><span class="s0">, </span><span class="s1">connections[options[</span><span class="s2">'database'</span><span class="s1">]]</span><span class="s0">, </span><span class="s1">only_django=</span><span class="s0">True</span><span class="s1">)</span>
+<a name="l23"><span class="ln">23   </span></a>        <span class="s0">if not </span><span class="s1">sql_statements </span><span class="s0">and </span><span class="s1">options[</span><span class="s2">'verbosity'</span><span class="s1">] &gt;= </span><span class="s3">1</span><span class="s1">:</span>
+<a name="l24"><span class="ln">24   </span></a>            <span class="s1">self.stderr.write(</span><span class="s2">'No tables found.'</span><span class="s1">)</span>
+<a name="l25"><span class="ln">25   </span></a>        <span class="s0">return </span><span class="s2">'</span><span class="s0">\n</span><span class="s2">'</span><span class="s1">.join(sql_statements)</span>
+<a name="l26"><span class="ln">26   </span></a></pre>
+</body>
+</html>

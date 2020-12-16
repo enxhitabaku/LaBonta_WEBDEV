@@ -1,0 +1,83 @@
+<html>
+<head>
+<title>technical_500.txt</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #a9b7c6;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+technical_500.txt</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">{% firstof exception_type 'Report' %}{% if request %} at {{ request.path_info }}{% endif %}</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">{% firstof exception_value 'No exception message supplied' %}</span>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">{% if request %}</span>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">Request Method: {{ request.META.REQUEST_METHOD }}</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s0">Request URL: {{ request.get_raw_uri }}{% endif %}</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s0">Django Version: {{ django_version_info }}</span>
+<a name="l7"><span class="ln">7    </span></a><span class="s0">Python Executable: {{ sys_executable }}</span>
+<a name="l8"><span class="ln">8    </span></a><span class="s0">Python Version: {{ sys_version_info }}</span>
+<a name="l9"><span class="ln">9    </span></a><span class="s0">Python Path: {{ sys_path }}</span>
+<a name="l10"><span class="ln">10   </span></a><span class="s0">Server time: {{server_time|date:&quot;r&quot;}}</span>
+<a name="l11"><span class="ln">11   </span></a><span class="s0">Installed Applications:</span>
+<a name="l12"><span class="ln">12   </span></a><span class="s0">{{ settings.INSTALLED_APPS|pprint }}</span>
+<a name="l13"><span class="ln">13   </span></a><span class="s0">Installed Middleware:</span>
+<a name="l14"><span class="ln">14   </span></a><span class="s0">{{ settings.MIDDLEWARE|pprint }}</span>
+<a name="l15"><span class="ln">15   </span></a><span class="s0">{% if template_does_not_exist %}Template loader postmortem</span>
+<a name="l16"><span class="ln">16   </span></a><span class="s0">{% if postmortem %}Django tried loading these templates, in this order:</span>
+<a name="l17"><span class="ln">17   </span></a><span class="s0">{% for entry in postmortem %}</span>
+<a name="l18"><span class="ln">18   </span></a><span class="s0">Using engine {{ entry.backend.name }}:</span>
+<a name="l19"><span class="ln">19   </span></a><span class="s0">{% if entry.tried %}{% for attempt in entry.tried %}    * {{ attempt.0.loader_name }}: {{ attempt.0.name }} ({{ attempt.1 }})</span>
+<a name="l20"><span class="ln">20   </span></a><span class="s0">{% endfor %}{% else %}    This engine did not provide a list of tried templates.</span>
+<a name="l21"><span class="ln">21   </span></a><span class="s0">{% endif %}{% endfor %}</span>
+<a name="l22"><span class="ln">22   </span></a><span class="s0">{% else %}No templates were found because your 'TEMPLATES' setting is not configured.</span>
+<a name="l23"><span class="ln">23   </span></a><span class="s0">{% endif %}</span>
+<a name="l24"><span class="ln">24   </span></a><span class="s0">{% endif %}{% if template_info %}</span>
+<a name="l25"><span class="ln">25   </span></a><span class="s0">Template error:</span>
+<a name="l26"><span class="ln">26   </span></a><span class="s0">In template {{ template_info.name }}, error at line {{ template_info.line }}</span>
+<a name="l27"><span class="ln">27   </span></a>   <span class="s0">{{ template_info.message }}</span>
+<a name="l28"><span class="ln">28   </span></a><span class="s0">{% for source_line in template_info.source_lines %}{% if source_line.0 == template_info.line %}   {{ source_line.0 }} : {{ template_info.before }} {{ template_info.during }} {{ template_info.after }}{% else %}   {{ source_line.0 }} : {{ source_line.1 }}{% endif %}{% endfor %}{% endif %}{% if frames %}</span>
+<a name="l29"><span class="ln">29   </span></a>
+<a name="l30"><span class="ln">30   </span></a><span class="s0">Traceback (most recent call last):</span>
+<a name="l31"><span class="ln">31   </span></a><span class="s0">{% for frame in frames %}{% ifchanged frame.exc_cause %}{% if frame.exc_cause %}</span>
+<a name="l32"><span class="ln">32   </span></a><span class="s0">{% if frame.exc_cause_explicit %}The above exception ({{ frame.exc_cause }}) was the direct cause of the following exception:{% else %}During handling of the above exception ({{ frame.exc_cause }}), another exception occurred:{% endif %}</span>
+<a name="l33"><span class="ln">33   </span></a><span class="s0">{% endif %}{% endifchanged %}  File &quot;{{ frame.filename }}&quot;{% if frame.context_line %}, line {{ frame.lineno }}{% endif %}, in {{ frame.function }}</span>
+<a name="l34"><span class="ln">34   </span></a><span class="s0">{% if frame.context_line %}    {% spaceless %}{{ frame.context_line }}{% endspaceless %}{% endif %}</span>
+<a name="l35"><span class="ln">35   </span></a><span class="s0">{% endfor %}</span>
+<a name="l36"><span class="ln">36   </span></a><span class="s0">{% if exception_type %}Exception Type: {{ exception_type }}{% if request %} at {{ request.path_info }}{% endif %}</span>
+<a name="l37"><span class="ln">37   </span></a><span class="s0">{% if exception_value %}Exception Value: {{ exception_value }}{% endif %}{% endif %}{% endif %}</span>
+<a name="l38"><span class="ln">38   </span></a><span class="s0">{% if request %}Request information:</span>
+<a name="l39"><span class="ln">39   </span></a><span class="s0">{% if user_str %}USER: {{ user_str }}{% endif %}</span>
+<a name="l40"><span class="ln">40   </span></a>
+<a name="l41"><span class="ln">41   </span></a><span class="s0">GET:{% for k, v in request_GET_items %}</span>
+<a name="l42"><span class="ln">42   </span></a><span class="s0">{{ k }} = {{ v|stringformat:&quot;r&quot; }}{% empty %} No GET data{% endfor %}</span>
+<a name="l43"><span class="ln">43   </span></a>
+<a name="l44"><span class="ln">44   </span></a><span class="s0">POST:{% for k, v in filtered_POST_items %}</span>
+<a name="l45"><span class="ln">45   </span></a><span class="s0">{{ k }} = {{ v|stringformat:&quot;r&quot; }}{% empty %} No POST data{% endfor %}</span>
+<a name="l46"><span class="ln">46   </span></a>
+<a name="l47"><span class="ln">47   </span></a><span class="s0">FILES:{% for k, v in request_FILES_items %}</span>
+<a name="l48"><span class="ln">48   </span></a><span class="s0">{{ k }} = {{ v|stringformat:&quot;r&quot; }}{% empty %} No FILES data{% endfor %}</span>
+<a name="l49"><span class="ln">49   </span></a>
+<a name="l50"><span class="ln">50   </span></a><span class="s0">COOKIES:{% for k, v in request_COOKIES_items %}</span>
+<a name="l51"><span class="ln">51   </span></a><span class="s0">{{ k }} = {{ v|stringformat:&quot;r&quot; }}{% empty %} No cookie data{% endfor %}</span>
+<a name="l52"><span class="ln">52   </span></a>
+<a name="l53"><span class="ln">53   </span></a><span class="s0">META:{% for k, v in request_meta.items|dictsort:0 %}</span>
+<a name="l54"><span class="ln">54   </span></a><span class="s0">{{ k }} = {{ v|stringformat:&quot;r&quot; }}{% endfor %}</span>
+<a name="l55"><span class="ln">55   </span></a><span class="s0">{% else %}Request data not supplied</span>
+<a name="l56"><span class="ln">56   </span></a><span class="s0">{% endif %}</span>
+<a name="l57"><span class="ln">57   </span></a><span class="s0">Settings:</span>
+<a name="l58"><span class="ln">58   </span></a><span class="s0">Using settings module {{ settings.SETTINGS_MODULE }}{% for k, v in settings.items|dictsort:0 %}</span>
+<a name="l59"><span class="ln">59   </span></a><span class="s0">{{ k }} = {{ v|stringformat:&quot;r&quot; }}{% endfor %}</span>
+<a name="l60"><span class="ln">60   </span></a>
+<a name="l61"><span class="ln">61   </span></a><span class="s0">{% if not is_email %}</span>
+<a name="l62"><span class="ln">62   </span></a><span class="s0">You're seeing this error because you have DEBUG = True in your</span>
+<a name="l63"><span class="ln">63   </span></a><span class="s0">Django settings file. Change that to False, and Django will</span>
+<a name="l64"><span class="ln">64   </span></a><span class="s0">display a standard page generated by the handler for this status code.</span>
+<a name="l65"><span class="ln">65   </span></a><span class="s0">{% endif %}</span>
+<a name="l66"><span class="ln">66   </span></a></pre>
+</body>
+</html>

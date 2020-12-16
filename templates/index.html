@@ -1,0 +1,589 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/index.css' %}">
+
+    <!--AOS-->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+
+    <!--Font Style-->
+    <link href='https://fonts.googleapis.com/css?family=Montserrat|Patua|Cormorant Garamond|Gabriela|Permanent Marker' rel='stylesheet'>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+{#    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&display=swap" rel="stylesheet">#}
+{#    <link href='https://fonts.googleapis.com/css?family=Patua One' rel='stylesheet'>#}
+{#    <link href='https://fonts.googleapis.com/css?family=Cormorant Garamond' rel='stylesheet'>#}
+{#    <link href='https://fonts.googleapis.com/css?family=Gabriela' rel='stylesheet'>#}
+
+    <!--Font Awesome ICONs-->
+{#    <script src="https://use.fontawesome.com/6eb17e02f3.js"></script>#}
+{#    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">#}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script>//Create cookie CRSF TOKEN for Ajax Call
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+    </script>
+
+
+    <!--Title & Logo-->
+    <link rel="icon" href="{% static 'img/LogoLaBonta.ico' %}" type="ico">
+    <title>La Bonta</title>
+
+</head>
+<html lang="en">
+
+<body>
+  <!--Sticky Floating Button-->
+  <a href="#" class="float">
+    <i class="fa fa-phone fa-2x my-float" aria-hidden="true"> </i>
+  </a>
+  <div class="label-container">
+    <div class="label-text">+355697669407</div>
+        <i class="fa fa-play label-arrow"></i>
+    </div>
+
+  <!--Navigation Bar-->
+  <nav class="navbar navbar-default navbar-fixed-top main-nav">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle " data-toggle="collapse" data-target="#myNavbar">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+            <a class="navbar-brand fontLogo" href="#" style="font-family: 'Permanent Marker',handwriting;">La Bonta</a>
+      </div> <!-class="navbar-header"->
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav optList">
+                <li class="active"><a href="#home" class="nav_home">Home</a></li>
+                <li><a href="#about" class="nav_about">About</a></li>
+                <li><a href="#booking" class="nav_booking">Booking</a></li>
+                <li><a href="#menu" class="nav_menu">Menu</a></li>
+                <li><a href="work" onclick="location.href='{% url 'work' %}'" class="nav_work">Work With Us</a></li>
+                <li><a href="#contact" class="nav_contact">Contact</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right langList">
+                <li><a href="#" data-language="italian">IT</a></li>
+                <li><a href="#" data-language="albanian">AL</a></li>
+                <li><a href="#" data-language="english">EN</a></li>
+            </ul>
+        </div><!-- id="myNavbar"-->
+    </div><!-- class="container-fluid"-->
+  </nav>
+
+
+      <!--Home Section-->
+    <section class="section" id="home">
+      <div class="container" id="homeContainer">
+        <!--Panel-->
+        <div class="panel panel-default" id="homePanel">
+          <!--Grid-->
+          <div class="row" id="homeGrid">
+
+            <div class="col-sm-5 col-md-5 col-lg-5">
+              <div class="panel-heading">
+                <h1>La Bonta - Pizza & Wine</h1>
+              </div>
+                <div class="panel-body">
+                  <p>La Bontá summarizes the work of a family business in the service of fellow citizens.
+                    <br>The refined taste of Italian products, marries quickly with our artisanal dough and turns into
+                    the result of the pizzas you choose.
+                    <br>We love our profession and thank you for supporting us with your orders!
+                    <br><br>
+                    <b>THANK YOU!</b>
+                  </p>
+                </div>
+            </div>
+
+            <div class="col-sm-7 col-md-7 col-lg-7" style="padding-right: 0;">
+              <!--Carousel-->
+              <div  class="myCarouselContainer">
+
+                <div id="myCarousel" class="carousel slide" data-ride="carousel">
+                  <!-- Indicators -->
+                  <ol class="carousel-indicators">
+                    <li data-target="#myCarousel" data-slide-to="0" class="active"></li>
+                    <li data-target="#myCarousel" data-slide-to="1"></li>
+                    <li data-target="#myCarousel" data-slide-to="2"></li>
+                    <li data-target="#myCarousel" data-slide-to="3"></li>
+                  </ol>
+                  <!-- Wrapper for slides -->
+                  <div class="carousel-inner">
+
+                    <div class="item active">
+                      <img src="{% static 'img/CarouselCover3 .jpg'%}" class="img-responsive" alt="LaBonta">
+                    </div>
+
+                    <div class="item">
+                      <img src="{% static 'img/MainCover2.jpg'%}" class="img-responsive" alt="LaBonta">
+                    </div>
+
+                    <div class="item">
+                      <img src="{% static 'img/CoverCarousel.jpg'%}" class="img-responsive" alt="LaBonta">
+                    </div>
+
+                    <div class="item">
+                      <img src="{% static 'img/CarouselCover2 .jpg'%}" class="img-responsive" alt="LaBonta">
+                    </div>
+
+                  </div>
+
+                  <!-- Left and right controls Carousel -->
+                  <a class="left carousel-control" href="#myCarousel" data-slide="prev">
+                    <span class="glyphicon glyphicon-chevron-left"></span>
+                    <span class="sr-only">Previous</span>
+                  </a>
+                  <a class="right carousel-control" href="#myCarousel" data-slide="next">
+                    <span class="glyphicon glyphicon-chevron-right"></span>
+                    <span class="sr-only">Next</span>
+                  </a>
+                </div><!--class="myCarousel"-->
+              </div><!-- class="myCarouselContainer"-->
+            </div><!-- class="col-sm-5 col-md-5 col-lg-5"-->
+          </div><!--class="row"-->
+        </div><!-- class="panel panel-default"-->
+      </div><!--class="container"-->
+    </section><!-- id="home"-->
+
+    <section class="section" id="about">
+      <h1 id="aboutYear" style=" font-family: 'Cormorant Garamond';">2015</h1>
+
+      <div class="container" id="aboutContainer">
+        <div class="panel panel-default" id="aboutPanel">
+          <div class="row">
+            <div class="col-sm-7 col-md-7 col-lg-7">
+
+              <div class="panel-header">
+
+              </div>
+              <div class="panel-body" id="imgPanel">
+                <img src="{% static 'img/Ambient.jpg' %}" alt="LaBonta">
+              </div>
+
+            </div>
+
+            <div class="col-sm-5 col-md-5 col-lg-5">
+              <div data-aos="fade-left" data-aos-offset="300" data-aos-easing="ease-in-sine">
+                <div class="panel-header" id="aboutLaBontaHeader">
+                  <h1 id="aboutHeader">About</h1>
+                </div><!--id="aboutLaBontaHeader"-->
+              </div>
+              <div data-aos="fade-right" data-aos-offset="300" data-aos-easing="ease-in-sine">
+                <div class="panel-body" id="aboutLaBontaPar">
+                  <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. A earum reprehenderit odio consectetur distinctio? Consequatur fugit officiis impedit doloremque animi a molestias assumenda qui velit? Aliquam tempora incidunt labore animi reiciendis, laboriosam, corrupti, rem iusto ratione atque unde odit eligendi.</p>
+                </div><!--id="aboutLaBontaPar"-->
+              </div>
+            </div><!-- class="col-sm-5 col-md-5 col-lg-5"-->
+          </div><!--class="row"-->
+        </div><!--class="panel panel-default"-->
+      </div><!--id="homeContainer"-->
+  </section>
+
+  <section id="menu">
+    <div class="container" id="menuContainer">
+
+        <div class="panel panel-default" id="menuPanel">
+          <div class="row">
+
+            <div class="col-sm-7 col-md-7 col-lg-7">
+
+                <div class="panel-header" data-aos="zoom-in-up" id="panelHeaderMenu">
+                  <h1 style="color: #387695;">SEASONAL PRODUCE COMBINED WITH THE VERY BEST INGREDIENTS TO CREATE A MENU THAT IS MODERN AND UNIQUE.</h1>
+                </div>
+
+                <div class="panel-body" id="panelParMenu">
+                  <div id="downloadLinkMenu">
+                    {% for d in download %}
+                    <ul data-aos="fade-right" data-aos-offset="300" data-aos-easing="ease-in-sine">
+
+                        {{ d.item_header | safe }}
+                            <ul>
+                                <a href="{{ d.item_to_download.url }}" download="{{ d.to_download_file_name }}" class="toDownload_menuSec">Click to Download</a>
+                            </ul>
+
+                    </ul>
+                    {% endfor %}
+                  </div>
+                </div><!--class="panel-body"-->
+
+            </div><!--First Col-->
+
+            <div class="col-sm- col-md-4 col-lg-4">
+              <div id="menuCarousel">
+                <!--Carousel-->
+                <div  class="myCarouselContainer">
+
+                  <div id="myCarouselMenu" class="carousel slide" data-ride="carousel">
+                    <!-- Indicators -->
+                    <ol class="carousel-indicators" id="aboutCarouselIndicators">
+                      <li data-target="#myCarouselMenu" data-slide-to="0" class="active"></li>
+                      <li data-target="#myCarouselMenu" data-slide-to="1"></li>
+                      <li data-target="#myCarouselMenu" data-slide-to="2"></li>
+                      <li data-target="#myCarouselMenu" data-slide-to="3"></li>
+                    </ol>
+                    <!-- Wrapper for slides -->
+                    <div class="carousel-inner">
+
+                      <div class="item active">
+                        <img src="{% static 'img/mainPizza.jpg'%}" >
+                      </div>
+
+                      <div class="item">
+                        <img src="{% static 'img/mainpizza2.jpg'%}" >
+                      </div>
+
+                      <div class="item">
+                        <img src="{% static 'img/mainPizza3.jpg' %}" >
+                      </div>
+
+                      <div class="item">
+                        <img src="{% static 'img/CarouselCoverMenu .jpg' %}">
+                      </div>
+
+                    </div>
+
+                    <!-- Left and right controls Carousel -->
+                    <a class="left carousel-control" id="leftAboutCtrl" href="#myCarouselMenu" data-slide="next">
+                      <span class="glyphicon glyphicon-chevron-right"></span>
+                      <span class="sr-only">Next</span>
+                    </a>
+
+                  </div><!--id="myCarouselMenu"-->
+                </div><!--class="myCarouselContainer"-->
+              </div><!--id="menuCarousel"-->
+            </div><!--Second Col-->
+
+        </div ><!--Class Row-->
+      </div><!--Panel-->
+
+    </div> <!-- class="container"-->
+  </section><!--id="menu"-->
+
+  <!--Booking Section-->
+  <section id="booking">
+
+    <div class="container" id="bookingContainer">
+
+      <div class="panel panel-default" id="aboutPanel">
+        <div class="row">
+
+          <div class="col-sm-6 col-md-6 col-lg-6 Booking">
+            <div class="panel-header">
+
+              <button  class="boxedHover" data-aos="zoom-in-left" id="bookTableButton">
+                <i class="fa fa-heartbeat fa-3x" aria-hidden="true"></i>
+                <h1>Book An Event</h1>
+                <p>We offer our great and unique spaces for your events</p>
+              </button>
+
+            </div>
+          </div><!--First Col-->
+
+          <div class="col-sm-6 col-md-6 col-lg-6 Booking">
+            <div class="panel-header">
+
+              <button class="boxedHover" data-aos="zoom-in-right" id="orderNowButton" >
+                <i class="fa fa-taxi fa-3x" aria-hidden="true"></i>
+                <h1>Order Now</h1>
+                <p>We offer our speedy delivery to statisfy your taste</p>
+              </button>
+
+            </div>
+          </div>
+        </div><!--Row-->
+      </div><!--Panel-->
+
+    </div>
+  </section><!--id=booking-->
+
+
+  <!--MODAL Book START-->
+  <div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog modal-lg">
+
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h1 class="headerModal" style="text-align: center;">When Would You Like To Join Us?</h1>
+        </div>
+        <form role="form" id="formId" action="{% url '#add_booking' %}" method="post">
+            <div class="modal-body" style="padding-bottom:20%;">
+                {% csrf_token %}
+                <div class="form-row">
+                  <div class="form-group col-sm-4 col-md-4 col-lg-4">
+                    <label for="inputName">Name</label>
+                    <input type="text" class="form-control myButton" id="inputName" name="name" placeholder="Name"  value="" required="required" data-error="Name Required">
+                  </div>
+                  <div class="form-group col-sm-4 col-md-4 col-lg-4">
+                    <label for="inputEmail">Email</label>
+                    <input type="email" class="form-control myButton" id="inputEmail" name="email" placeholder="Email" required="required" data-error="Email Required">
+                  </div>
+                  <div class="form-group col-sm-4 col-md-4 col-lg-4">
+                    <label for="inputPhoneNo">Phone No</label>
+                    <input type="number" class="form-control myButton" id="inputPhoneNo" name="phoneNo" placeholder="Phone Number" required="required" data-error="Phone No Required">
+                  </div>
+                </div>
+
+                <div class="form-row" id="secondRow">
+                  <div class="form-group col-sm-4 col-md-4 col-lg-4">
+                    <label for="inputDate">Date</label>
+                    <input type="date" class="form-control myButton" id="inputDate" placeholder="Date"  name="date" required="required" data-error="Date Required">
+                  </div>
+                  <div class="form-group col-sm-4 col-md-4 col-lg-4">
+                    <label for="inputTime">Time</label>
+                    <input type="time" class="form-control myButton" id="inputTime" placeholder="Time" name="time" required="required" data-error="Time Required">
+                  </div>
+                  <div class="form-group col-sm-4 col-md-4 col-lg-4">
+                    <label for="inputNumberOfPeople">No of People</label>
+                    <input type="number" class="form-control myButton" id="inputPeopleNo" placeholder="Number Of People" name="no_of_people" required="required" data-error="No of People Required">
+                  </div>
+                </div>
+            </div><!--ModalBody Close TAG-->
+            <div class="modal-footer" style="padding-bottom:5%;">
+              <div class="form-row" id="thirdRow">
+                <div class="col-sm-12 col-md-12 col-lg-12">
+                  <span>
+                    <input type="submit" value="Book" class="myButton clickIt" id="bookATable"> <i class="fa fa-long-arrow-right fa-lg"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+        </form><!--Form Close TAG-->
+      </div>
+
+    </div>
+  </div>
+<!--BOOK END-->
+
+  <!--MODAL Order Now Start-->
+
+  <div class="modal fade" id="myOrderModal" role="dialog">
+    <div class="modal-dialog modal-md">
+
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h1 style="text-align: center;">La Bonta Delivery </h1>
+        </div>
+
+          {% for s in food_section %}<!--Loop through food sections (categories)-->
+              <h2>{{ s.food_category }}</h2> <!--Print Section Type of Food-->
+              {% for d in delivery %}<!--Loop Through foods-->
+                {% if d.food == s.food_category %}<!--If foods are in the same category print them-->
+          <div class="row">
+            <div class="col-sm-6 col-md-6 col-lg-6" >
+              <ul>
+                <li> <button class="clickIt fa fa-minus-circle minus" aria-hidden="true" data-product={{ d.id }} data-action="remove"></button> </li>
+                <li id="product" class="products">{{d.name}}</li>
+                <li> <button class="clickIt fa fa-plus-circle plus" data-product={{ d.id }} data-action="add"></button> </li>
+              </ul>
+            </div><!--Column-->
+
+            <div class="col-sm-2 col-md-2 col-lg-2 input_div" >
+                <input type="number" class="quantity" value="0" data-qty="Qty" name="user_quantity" readonly>
+            </div><!--Column-->
+
+            <div class="col-sm-4 col-md-4 col-lg-4 price_div" id="priceDiv">
+              <span class="price" id="priceId" name="user_price">{{d.price|floatformat:2}}</span><b>ALL</b>
+                <div class="hideTotal"> <span class="totalPricePerProd" name="totalPrice_perProd">0</span>ALL</div>
+            </div><!--Column-->
+          </div><!--Row-->
+
+               {% endif %}
+             {% endfor %}
+          {% endfor %}
+                    <!--Checkout Button-->
+         <div class="modal-footer" id="checkoutModal_footer">
+            <button class="clickIt" id='placeOrder_button' type="submit">
+              <i class="fas fa-check" style="margin-right:15px;"></i>
+              Checkout
+            </button>
+          </div>
+      </div><!--class="modal-content"-->
+    </div><!--class="modal-dialog modal-md"-->
+  </div><!-- id="myOrderModal"-->
+
+  <!--Modal Order Now END-->
+
+  <!--MODAL_CHECHKOUT -->
+<div class="modal fade" id="checkout_modal" role="dialog">
+  <div class="modal-dialog modal-md">
+
+    <div class="modal-content" id="checkoutModal_content">
+
+      <div class="modal-header" id="checkoutModal_header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h1>Checkout</h1>
+      </div>
+
+      <!--To Center The Modal Content Body-->
+      <div class="center_modal_content">
+        <!--Row GRID Recipt&Note-->
+        <div class="row " id="row_noteAndRecipt">
+          <div class="col-sm-7 col-md-7 col-lg-7" id="recipt_Column"><!--First COL Recipt-->
+              <!--Table-->
+            <table class="table table-bordered">
+            <caption id="recipt_label">Your Recipt :</caption>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for i in item  %}
+                <tr>
+                  <td><span class="recipt_ProdType">{{ i.product.food }}</span> <span class="recipt_product">{{ i.product.name }}</span> <b>x<span class="recipt_portions">{{ i.quantity }}</span></b></td>
+                  <td><span class="recipt_price">{{ i.product.price|floatformat:2 }}<b>ALL</b></span></td>
+                </tr>
+              </tbody>
+                {% endfor %}
+              <tfoot>
+                <th>Total</th>
+                <td><b><span class="recipt_totalPrice">{{ order.get_cart_total | floatformat:2}}</span>ALL</b></td>
+              </tfoot>
+            </table>
+
+          </div><!--End FirstCOL-->
+          <div class="col-sm-5 col-md-5 col-lg-5" id="note_Column"><!--NOTE Col-->
+            <label id="NoteLabel">A Note For Us :</label>
+            <textarea class="form-control" id = "checkout_note" rows = "3"  style="resize: none;"></textarea>
+          </div><!--End COL-->
+        </div><!--End Row-->
+
+        <div class="row"><!--Row StreetAdd&PhoneNo-->
+          <!--Form-->
+          <div role="form" id="grid_Form">
+            <div class="form-row"><!--Row Form-->
+              <div class="form-group col-sm-6 col-md-6 col-lg-6">
+                <label for="StAdd" id="gridForm_streetAdd">Street Add</label>
+                <input type="text" class="form-control myButton" id="label_streetAdd" placeholder="Road 'Sali Butka'"  value="" name="StAdd" required>
+              </div>
+              <div class="form-group col-sm-6 col-md-6 col-lg-6">
+                <label for="PhNo" id="gridForm_phoneNo">Phone No</label>
+                <input type="text" class="form-control myButton" id="label_phoneNo" placeholder="+3556xxxxxxxx" name="PhNo" required>
+              </div>
+            </div>
+          </div><!--Row Form END-->
+
+        </div><!--End Row-->
+
+          <div class="modal-footer" id="checkoutModal_footer">
+            <button type="submit" class="clickIt" id="order_button">Order</button>
+            <span id="pay_cashSpan"><h5>*Pay Cash In Pick Up</h5></span>
+          </div>
+
+      </div><!--To Center Modal Body END-->
+    </div><!--class="modal-content"-->
+  </div><!--class="modal-dialog modal-md"-->
+</div>
+<!--END-->
+
+  <div class="container" id="servingContainer">
+    <div class="row" id="servingTime">
+
+      <div class="col-sm-4 col-md-4 col-lg-4 brunch" data-aos="fade-down">
+        <h1 style="color:#a1b2b6;">Brunch</h1>
+        <p class="days">Saturday - Sunday</p>
+{#          <br>#}
+        <p class="time">11 am - 4 pm</p>
+      </div>
+      <div class="col-sm-4 col-md-4 col-lg-4 lunch" data-aos="fade-down">
+        <h1 style="color: #d8bba6;">Lunch</h1>
+        <p class="days">Saturday - Sunday</p>
+{#          <br>#}
+        <p class="time">12:30 pm - 4 pm</p>
+      </div>
+      <div class="col-sm-4 col-md-4 col-lg-4 dinner" data-aos="fade-down">
+        <h1 style="color: #30475e;">Dinner</h1>
+          <p class="days">Saturday - Sunday</p>
+{#          <br>#}
+        <p class="time">4 pm - 23:59 pm</p>
+      </div>
+
+    </div><!-- class="row"-->
+  </div><!-- id="servingContainer"-->
+
+  <section id="contact">
+
+    <div class="container" id="contactContainer">
+      <div class="row" id="contactGrid">
+
+        <div class="col-sm-4 col-md-4 col-lg-4" name="newsletterDiv">
+          <h1 class="newsletter">Newsletter</h1>
+          <input type="email" placeholder="Enter Your Email" id="newsletterEmail" name="emailInput"><a class="fa fa-long-arrow-right fa-2x" aria-hidden="true" id="newsletterIcon" onclick="ValidateEmail(document.newsletterDiv.emailInput)"></a>
+        </div>
+        <div class="col-sm-4 col-md-4 col-lg-4">
+          <h1 class="address">Address</h1>
+          <p>Misto Mame, Lushnjë, Shqipëri
+            <br><br>
+            <a href="https://goo.gl/maps/vAS81a27oof4kbQKA" target="_blank" class="fa fa-map-marker fa-3x" aria-hidden="true"> </a>
+          </p>
+        </div>
+        <div class="col-sm-4 col-md-4 col-lg-4">
+          <h1 class="socialMedia">Social Media</h1>
+          <a href="https://www.facebook.com/pages/category/Pizza-Place/Pizzeria-la-Bont%C3%A0-466250780137392/" target="_blank" class="fa fa-facebook-official fa-2x" aria-hidden="true"></a>
+          <a href="https://www.instagram.com/pizzeria_la_bonta/"  target="_blank" class="fa fa-instagram fa-2x" aria-hidden="true" ></a>
+        </div>
+    </div>
+
+    <div class="alertContainer">
+      <div class="alert alert-success alert-dismissible fade in" id="newsletterEmailSuccesAlert">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <span><strong>Successfully Registered !</strong> You will be provided an email every time we got updates !</span>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container" id="footerContainer">
+      <div class="row">
+        <div class="col-sm-4 col-md-4 col-lg-4">
+          <h2 class="author">Made By Enxhi Tabaku</h2>
+        </div>
+
+        <div class="col-sm-4 col-md-4 col-lg-4">
+            <h2><a href="#" class="fa fa-long-arrow-up" aria-hidden="true"></a></h2>
+        </div>
+
+        <div class="col-sm-4 col-md-4 col-lg-4">
+          <h2 class="rightsReserved">All Rights Reserved</h2>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+      <!--AOS-->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+      <!--jQuery JS & Bootrsap-->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script src="{% static 'js/index.js' %}"></script>
+  <script src="{% static 'js/language.js'%}"></script>
+</body>
+</html>

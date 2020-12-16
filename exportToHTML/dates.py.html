@@ -1,0 +1,747 @@
+<html>
+<head>
+<title>dates.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #629755; font-style: italic;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+.s5 { color: #808080;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+dates.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">import </span><span class="s1">datetime</span>
+<a name="l2"><span class="ln">2    </span></a>
+<a name="l3"><span class="ln">3    </span></a><span class="s0">from </span><span class="s1">django.conf </span><span class="s0">import </span><span class="s1">settings</span>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">from </span><span class="s1">django.core.exceptions </span><span class="s0">import </span><span class="s1">ImproperlyConfigured</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s0">from </span><span class="s1">django.db </span><span class="s0">import </span><span class="s1">models</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s0">from </span><span class="s1">django.http </span><span class="s0">import </span><span class="s1">Http404</span>
+<a name="l7"><span class="ln">7    </span></a><span class="s0">from </span><span class="s1">django.utils </span><span class="s0">import </span><span class="s1">timezone</span>
+<a name="l8"><span class="ln">8    </span></a><span class="s0">from </span><span class="s1">django.utils.functional </span><span class="s0">import </span><span class="s1">cached_property</span>
+<a name="l9"><span class="ln">9    </span></a><span class="s0">from </span><span class="s1">django.utils.translation </span><span class="s0">import </span><span class="s1">gettext </span><span class="s0">as </span><span class="s1">_</span>
+<a name="l10"><span class="ln">10   </span></a><span class="s0">from </span><span class="s1">django.views.generic.base </span><span class="s0">import </span><span class="s1">View</span>
+<a name="l11"><span class="ln">11   </span></a><span class="s0">from </span><span class="s1">django.views.generic.detail </span><span class="s0">import </span><span class="s1">(</span>
+<a name="l12"><span class="ln">12   </span></a>    <span class="s1">BaseDetailView</span><span class="s0">, </span><span class="s1">SingleObjectTemplateResponseMixin</span><span class="s0">,</span>
+<a name="l13"><span class="ln">13   </span></a><span class="s1">)</span>
+<a name="l14"><span class="ln">14   </span></a><span class="s0">from </span><span class="s1">django.views.generic.list </span><span class="s0">import </span><span class="s1">(</span>
+<a name="l15"><span class="ln">15   </span></a>    <span class="s1">MultipleObjectMixin</span><span class="s0">, </span><span class="s1">MultipleObjectTemplateResponseMixin</span><span class="s0">,</span>
+<a name="l16"><span class="ln">16   </span></a><span class="s1">)</span>
+<a name="l17"><span class="ln">17   </span></a>
+<a name="l18"><span class="ln">18   </span></a>
+<a name="l19"><span class="ln">19   </span></a><span class="s0">class </span><span class="s1">YearMixin:</span>
+<a name="l20"><span class="ln">20   </span></a>    <span class="s2">&quot;&quot;&quot;Mixin for views manipulating year-based data.&quot;&quot;&quot;</span>
+<a name="l21"><span class="ln">21   </span></a>    <span class="s1">year_format = </span><span class="s3">'%Y'</span>
+<a name="l22"><span class="ln">22   </span></a>    <span class="s1">year = </span><span class="s0">None</span>
+<a name="l23"><span class="ln">23   </span></a>
+<a name="l24"><span class="ln">24   </span></a>    <span class="s0">def </span><span class="s1">get_year_format(self):</span>
+<a name="l25"><span class="ln">25   </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l26"><span class="ln">26   </span></a>        Get a year format string in strptime syntax to be used to parse the 
+<a name="l27"><span class="ln">27   </span></a>        year from url variables. 
+<a name="l28"><span class="ln">28   </span></a>        &quot;&quot;&quot;</span>
+<a name="l29"><span class="ln">29   </span></a>        <span class="s0">return </span><span class="s1">self.year_format</span>
+<a name="l30"><span class="ln">30   </span></a>
+<a name="l31"><span class="ln">31   </span></a>    <span class="s0">def </span><span class="s1">get_year(self):</span>
+<a name="l32"><span class="ln">32   </span></a>        <span class="s2">&quot;&quot;&quot;Return the year for which this view should display data.&quot;&quot;&quot;</span>
+<a name="l33"><span class="ln">33   </span></a>        <span class="s1">year = self.year</span>
+<a name="l34"><span class="ln">34   </span></a>        <span class="s0">if </span><span class="s1">year </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l35"><span class="ln">35   </span></a>            <span class="s0">try</span><span class="s1">:</span>
+<a name="l36"><span class="ln">36   </span></a>                <span class="s1">year = self.kwargs[</span><span class="s3">'year'</span><span class="s1">]</span>
+<a name="l37"><span class="ln">37   </span></a>            <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l38"><span class="ln">38   </span></a>                <span class="s0">try</span><span class="s1">:</span>
+<a name="l39"><span class="ln">39   </span></a>                    <span class="s1">year = self.request.GET[</span><span class="s3">'year'</span><span class="s1">]</span>
+<a name="l40"><span class="ln">40   </span></a>                <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l41"><span class="ln">41   </span></a>                    <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">&quot;No year specified&quot;</span><span class="s1">))</span>
+<a name="l42"><span class="ln">42   </span></a>        <span class="s0">return </span><span class="s1">year</span>
+<a name="l43"><span class="ln">43   </span></a>
+<a name="l44"><span class="ln">44   </span></a>    <span class="s0">def </span><span class="s1">get_next_year(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l45"><span class="ln">45   </span></a>        <span class="s2">&quot;&quot;&quot;Get the next valid year.&quot;&quot;&quot;</span>
+<a name="l46"><span class="ln">46   </span></a>        <span class="s0">return </span><span class="s1">_get_next_prev(self</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous=</span><span class="s0">False, </span><span class="s1">period=</span><span class="s3">'year'</span><span class="s1">)</span>
+<a name="l47"><span class="ln">47   </span></a>
+<a name="l48"><span class="ln">48   </span></a>    <span class="s0">def </span><span class="s1">get_previous_year(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l49"><span class="ln">49   </span></a>        <span class="s2">&quot;&quot;&quot;Get the previous valid year.&quot;&quot;&quot;</span>
+<a name="l50"><span class="ln">50   </span></a>        <span class="s0">return </span><span class="s1">_get_next_prev(self</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous=</span><span class="s0">True, </span><span class="s1">period=</span><span class="s3">'year'</span><span class="s1">)</span>
+<a name="l51"><span class="ln">51   </span></a>
+<a name="l52"><span class="ln">52   </span></a>    <span class="s0">def </span><span class="s1">_get_next_year(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l53"><span class="ln">53   </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l54"><span class="ln">54   </span></a>        Return the start date of the next interval. 
+<a name="l55"><span class="ln">55   </span></a> 
+<a name="l56"><span class="ln">56   </span></a>        The interval is defined by start date &lt;= item date &lt; next start date. 
+<a name="l57"><span class="ln">57   </span></a>        &quot;&quot;&quot;</span>
+<a name="l58"><span class="ln">58   </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l59"><span class="ln">59   </span></a>            <span class="s0">return </span><span class="s1">date.replace(year=date.year + </span><span class="s4">1</span><span class="s0">, </span><span class="s1">month=</span><span class="s4">1</span><span class="s0">, </span><span class="s1">day=</span><span class="s4">1</span><span class="s1">)</span>
+<a name="l60"><span class="ln">60   </span></a>        <span class="s0">except </span><span class="s1">ValueError:</span>
+<a name="l61"><span class="ln">61   </span></a>            <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">&quot;Date out of range&quot;</span><span class="s1">))</span>
+<a name="l62"><span class="ln">62   </span></a>
+<a name="l63"><span class="ln">63   </span></a>    <span class="s0">def </span><span class="s1">_get_current_year(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l64"><span class="ln">64   </span></a>        <span class="s2">&quot;&quot;&quot;Return the start date of the current interval.&quot;&quot;&quot;</span>
+<a name="l65"><span class="ln">65   </span></a>        <span class="s0">return </span><span class="s1">date.replace(month=</span><span class="s4">1</span><span class="s0">, </span><span class="s1">day=</span><span class="s4">1</span><span class="s1">)</span>
+<a name="l66"><span class="ln">66   </span></a>
+<a name="l67"><span class="ln">67   </span></a>
+<a name="l68"><span class="ln">68   </span></a><span class="s0">class </span><span class="s1">MonthMixin:</span>
+<a name="l69"><span class="ln">69   </span></a>    <span class="s2">&quot;&quot;&quot;Mixin for views manipulating month-based data.&quot;&quot;&quot;</span>
+<a name="l70"><span class="ln">70   </span></a>    <span class="s1">month_format = </span><span class="s3">'%b'</span>
+<a name="l71"><span class="ln">71   </span></a>    <span class="s1">month = </span><span class="s0">None</span>
+<a name="l72"><span class="ln">72   </span></a>
+<a name="l73"><span class="ln">73   </span></a>    <span class="s0">def </span><span class="s1">get_month_format(self):</span>
+<a name="l74"><span class="ln">74   </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l75"><span class="ln">75   </span></a>        Get a month format string in strptime syntax to be used to parse the 
+<a name="l76"><span class="ln">76   </span></a>        month from url variables. 
+<a name="l77"><span class="ln">77   </span></a>        &quot;&quot;&quot;</span>
+<a name="l78"><span class="ln">78   </span></a>        <span class="s0">return </span><span class="s1">self.month_format</span>
+<a name="l79"><span class="ln">79   </span></a>
+<a name="l80"><span class="ln">80   </span></a>    <span class="s0">def </span><span class="s1">get_month(self):</span>
+<a name="l81"><span class="ln">81   </span></a>        <span class="s2">&quot;&quot;&quot;Return the month for which this view should display data.&quot;&quot;&quot;</span>
+<a name="l82"><span class="ln">82   </span></a>        <span class="s1">month = self.month</span>
+<a name="l83"><span class="ln">83   </span></a>        <span class="s0">if </span><span class="s1">month </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l84"><span class="ln">84   </span></a>            <span class="s0">try</span><span class="s1">:</span>
+<a name="l85"><span class="ln">85   </span></a>                <span class="s1">month = self.kwargs[</span><span class="s3">'month'</span><span class="s1">]</span>
+<a name="l86"><span class="ln">86   </span></a>            <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l87"><span class="ln">87   </span></a>                <span class="s0">try</span><span class="s1">:</span>
+<a name="l88"><span class="ln">88   </span></a>                    <span class="s1">month = self.request.GET[</span><span class="s3">'month'</span><span class="s1">]</span>
+<a name="l89"><span class="ln">89   </span></a>                <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l90"><span class="ln">90   </span></a>                    <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">&quot;No month specified&quot;</span><span class="s1">))</span>
+<a name="l91"><span class="ln">91   </span></a>        <span class="s0">return </span><span class="s1">month</span>
+<a name="l92"><span class="ln">92   </span></a>
+<a name="l93"><span class="ln">93   </span></a>    <span class="s0">def </span><span class="s1">get_next_month(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l94"><span class="ln">94   </span></a>        <span class="s2">&quot;&quot;&quot;Get the next valid month.&quot;&quot;&quot;</span>
+<a name="l95"><span class="ln">95   </span></a>        <span class="s0">return </span><span class="s1">_get_next_prev(self</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous=</span><span class="s0">False, </span><span class="s1">period=</span><span class="s3">'month'</span><span class="s1">)</span>
+<a name="l96"><span class="ln">96   </span></a>
+<a name="l97"><span class="ln">97   </span></a>    <span class="s0">def </span><span class="s1">get_previous_month(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l98"><span class="ln">98   </span></a>        <span class="s2">&quot;&quot;&quot;Get the previous valid month.&quot;&quot;&quot;</span>
+<a name="l99"><span class="ln">99   </span></a>        <span class="s0">return </span><span class="s1">_get_next_prev(self</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous=</span><span class="s0">True, </span><span class="s1">period=</span><span class="s3">'month'</span><span class="s1">)</span>
+<a name="l100"><span class="ln">100  </span></a>
+<a name="l101"><span class="ln">101  </span></a>    <span class="s0">def </span><span class="s1">_get_next_month(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l102"><span class="ln">102  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l103"><span class="ln">103  </span></a>        Return the start date of the next interval. 
+<a name="l104"><span class="ln">104  </span></a> 
+<a name="l105"><span class="ln">105  </span></a>        The interval is defined by start date &lt;= item date &lt; next start date. 
+<a name="l106"><span class="ln">106  </span></a>        &quot;&quot;&quot;</span>
+<a name="l107"><span class="ln">107  </span></a>        <span class="s0">if </span><span class="s1">date.month == </span><span class="s4">12</span><span class="s1">:</span>
+<a name="l108"><span class="ln">108  </span></a>            <span class="s0">try</span><span class="s1">:</span>
+<a name="l109"><span class="ln">109  </span></a>                <span class="s0">return </span><span class="s1">date.replace(year=date.year + </span><span class="s4">1</span><span class="s0">, </span><span class="s1">month=</span><span class="s4">1</span><span class="s0">, </span><span class="s1">day=</span><span class="s4">1</span><span class="s1">)</span>
+<a name="l110"><span class="ln">110  </span></a>            <span class="s0">except </span><span class="s1">ValueError:</span>
+<a name="l111"><span class="ln">111  </span></a>                <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">&quot;Date out of range&quot;</span><span class="s1">))</span>
+<a name="l112"><span class="ln">112  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l113"><span class="ln">113  </span></a>            <span class="s0">return </span><span class="s1">date.replace(month=date.month + </span><span class="s4">1</span><span class="s0">, </span><span class="s1">day=</span><span class="s4">1</span><span class="s1">)</span>
+<a name="l114"><span class="ln">114  </span></a>
+<a name="l115"><span class="ln">115  </span></a>    <span class="s0">def </span><span class="s1">_get_current_month(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l116"><span class="ln">116  </span></a>        <span class="s2">&quot;&quot;&quot;Return the start date of the previous interval.&quot;&quot;&quot;</span>
+<a name="l117"><span class="ln">117  </span></a>        <span class="s0">return </span><span class="s1">date.replace(day=</span><span class="s4">1</span><span class="s1">)</span>
+<a name="l118"><span class="ln">118  </span></a>
+<a name="l119"><span class="ln">119  </span></a>
+<a name="l120"><span class="ln">120  </span></a><span class="s0">class </span><span class="s1">DayMixin:</span>
+<a name="l121"><span class="ln">121  </span></a>    <span class="s2">&quot;&quot;&quot;Mixin for views manipulating day-based data.&quot;&quot;&quot;</span>
+<a name="l122"><span class="ln">122  </span></a>    <span class="s1">day_format = </span><span class="s3">'%d'</span>
+<a name="l123"><span class="ln">123  </span></a>    <span class="s1">day = </span><span class="s0">None</span>
+<a name="l124"><span class="ln">124  </span></a>
+<a name="l125"><span class="ln">125  </span></a>    <span class="s0">def </span><span class="s1">get_day_format(self):</span>
+<a name="l126"><span class="ln">126  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l127"><span class="ln">127  </span></a>        Get a day format string in strptime syntax to be used to parse the day 
+<a name="l128"><span class="ln">128  </span></a>        from url variables. 
+<a name="l129"><span class="ln">129  </span></a>        &quot;&quot;&quot;</span>
+<a name="l130"><span class="ln">130  </span></a>        <span class="s0">return </span><span class="s1">self.day_format</span>
+<a name="l131"><span class="ln">131  </span></a>
+<a name="l132"><span class="ln">132  </span></a>    <span class="s0">def </span><span class="s1">get_day(self):</span>
+<a name="l133"><span class="ln">133  </span></a>        <span class="s2">&quot;&quot;&quot;Return the day for which this view should display data.&quot;&quot;&quot;</span>
+<a name="l134"><span class="ln">134  </span></a>        <span class="s1">day = self.day</span>
+<a name="l135"><span class="ln">135  </span></a>        <span class="s0">if </span><span class="s1">day </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l136"><span class="ln">136  </span></a>            <span class="s0">try</span><span class="s1">:</span>
+<a name="l137"><span class="ln">137  </span></a>                <span class="s1">day = self.kwargs[</span><span class="s3">'day'</span><span class="s1">]</span>
+<a name="l138"><span class="ln">138  </span></a>            <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l139"><span class="ln">139  </span></a>                <span class="s0">try</span><span class="s1">:</span>
+<a name="l140"><span class="ln">140  </span></a>                    <span class="s1">day = self.request.GET[</span><span class="s3">'day'</span><span class="s1">]</span>
+<a name="l141"><span class="ln">141  </span></a>                <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l142"><span class="ln">142  </span></a>                    <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">&quot;No day specified&quot;</span><span class="s1">))</span>
+<a name="l143"><span class="ln">143  </span></a>        <span class="s0">return </span><span class="s1">day</span>
+<a name="l144"><span class="ln">144  </span></a>
+<a name="l145"><span class="ln">145  </span></a>    <span class="s0">def </span><span class="s1">get_next_day(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l146"><span class="ln">146  </span></a>        <span class="s2">&quot;&quot;&quot;Get the next valid day.&quot;&quot;&quot;</span>
+<a name="l147"><span class="ln">147  </span></a>        <span class="s0">return </span><span class="s1">_get_next_prev(self</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous=</span><span class="s0">False, </span><span class="s1">period=</span><span class="s3">'day'</span><span class="s1">)</span>
+<a name="l148"><span class="ln">148  </span></a>
+<a name="l149"><span class="ln">149  </span></a>    <span class="s0">def </span><span class="s1">get_previous_day(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l150"><span class="ln">150  </span></a>        <span class="s2">&quot;&quot;&quot;Get the previous valid day.&quot;&quot;&quot;</span>
+<a name="l151"><span class="ln">151  </span></a>        <span class="s0">return </span><span class="s1">_get_next_prev(self</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous=</span><span class="s0">True, </span><span class="s1">period=</span><span class="s3">'day'</span><span class="s1">)</span>
+<a name="l152"><span class="ln">152  </span></a>
+<a name="l153"><span class="ln">153  </span></a>    <span class="s0">def </span><span class="s1">_get_next_day(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l154"><span class="ln">154  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l155"><span class="ln">155  </span></a>        Return the start date of the next interval. 
+<a name="l156"><span class="ln">156  </span></a> 
+<a name="l157"><span class="ln">157  </span></a>        The interval is defined by start date &lt;= item date &lt; next start date. 
+<a name="l158"><span class="ln">158  </span></a>        &quot;&quot;&quot;</span>
+<a name="l159"><span class="ln">159  </span></a>        <span class="s0">return </span><span class="s1">date + datetime.timedelta(days=</span><span class="s4">1</span><span class="s1">)</span>
+<a name="l160"><span class="ln">160  </span></a>
+<a name="l161"><span class="ln">161  </span></a>    <span class="s0">def </span><span class="s1">_get_current_day(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l162"><span class="ln">162  </span></a>        <span class="s2">&quot;&quot;&quot;Return the start date of the current interval.&quot;&quot;&quot;</span>
+<a name="l163"><span class="ln">163  </span></a>        <span class="s0">return </span><span class="s1">date</span>
+<a name="l164"><span class="ln">164  </span></a>
+<a name="l165"><span class="ln">165  </span></a>
+<a name="l166"><span class="ln">166  </span></a><span class="s0">class </span><span class="s1">WeekMixin:</span>
+<a name="l167"><span class="ln">167  </span></a>    <span class="s2">&quot;&quot;&quot;Mixin for views manipulating week-based data.&quot;&quot;&quot;</span>
+<a name="l168"><span class="ln">168  </span></a>    <span class="s1">week_format = </span><span class="s3">'%U'</span>
+<a name="l169"><span class="ln">169  </span></a>    <span class="s1">week = </span><span class="s0">None</span>
+<a name="l170"><span class="ln">170  </span></a>
+<a name="l171"><span class="ln">171  </span></a>    <span class="s0">def </span><span class="s1">get_week_format(self):</span>
+<a name="l172"><span class="ln">172  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l173"><span class="ln">173  </span></a>        Get a week format string in strptime syntax to be used to parse the 
+<a name="l174"><span class="ln">174  </span></a>        week from url variables. 
+<a name="l175"><span class="ln">175  </span></a>        &quot;&quot;&quot;</span>
+<a name="l176"><span class="ln">176  </span></a>        <span class="s0">return </span><span class="s1">self.week_format</span>
+<a name="l177"><span class="ln">177  </span></a>
+<a name="l178"><span class="ln">178  </span></a>    <span class="s0">def </span><span class="s1">get_week(self):</span>
+<a name="l179"><span class="ln">179  </span></a>        <span class="s2">&quot;&quot;&quot;Return the week for which this view should display data.&quot;&quot;&quot;</span>
+<a name="l180"><span class="ln">180  </span></a>        <span class="s1">week = self.week</span>
+<a name="l181"><span class="ln">181  </span></a>        <span class="s0">if </span><span class="s1">week </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l182"><span class="ln">182  </span></a>            <span class="s0">try</span><span class="s1">:</span>
+<a name="l183"><span class="ln">183  </span></a>                <span class="s1">week = self.kwargs[</span><span class="s3">'week'</span><span class="s1">]</span>
+<a name="l184"><span class="ln">184  </span></a>            <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l185"><span class="ln">185  </span></a>                <span class="s0">try</span><span class="s1">:</span>
+<a name="l186"><span class="ln">186  </span></a>                    <span class="s1">week = self.request.GET[</span><span class="s3">'week'</span><span class="s1">]</span>
+<a name="l187"><span class="ln">187  </span></a>                <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l188"><span class="ln">188  </span></a>                    <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">&quot;No week specified&quot;</span><span class="s1">))</span>
+<a name="l189"><span class="ln">189  </span></a>        <span class="s0">return </span><span class="s1">week</span>
+<a name="l190"><span class="ln">190  </span></a>
+<a name="l191"><span class="ln">191  </span></a>    <span class="s0">def </span><span class="s1">get_next_week(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l192"><span class="ln">192  </span></a>        <span class="s2">&quot;&quot;&quot;Get the next valid week.&quot;&quot;&quot;</span>
+<a name="l193"><span class="ln">193  </span></a>        <span class="s0">return </span><span class="s1">_get_next_prev(self</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous=</span><span class="s0">False, </span><span class="s1">period=</span><span class="s3">'week'</span><span class="s1">)</span>
+<a name="l194"><span class="ln">194  </span></a>
+<a name="l195"><span class="ln">195  </span></a>    <span class="s0">def </span><span class="s1">get_previous_week(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l196"><span class="ln">196  </span></a>        <span class="s2">&quot;&quot;&quot;Get the previous valid week.&quot;&quot;&quot;</span>
+<a name="l197"><span class="ln">197  </span></a>        <span class="s0">return </span><span class="s1">_get_next_prev(self</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous=</span><span class="s0">True, </span><span class="s1">period=</span><span class="s3">'week'</span><span class="s1">)</span>
+<a name="l198"><span class="ln">198  </span></a>
+<a name="l199"><span class="ln">199  </span></a>    <span class="s0">def </span><span class="s1">_get_next_week(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l200"><span class="ln">200  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l201"><span class="ln">201  </span></a>        Return the start date of the next interval. 
+<a name="l202"><span class="ln">202  </span></a> 
+<a name="l203"><span class="ln">203  </span></a>        The interval is defined by start date &lt;= item date &lt; next start date. 
+<a name="l204"><span class="ln">204  </span></a>        &quot;&quot;&quot;</span>
+<a name="l205"><span class="ln">205  </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l206"><span class="ln">206  </span></a>            <span class="s0">return </span><span class="s1">date + datetime.timedelta(days=</span><span class="s4">7 </span><span class="s1">- self._get_weekday(date))</span>
+<a name="l207"><span class="ln">207  </span></a>        <span class="s0">except </span><span class="s1">OverflowError:</span>
+<a name="l208"><span class="ln">208  </span></a>            <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">&quot;Date out of range&quot;</span><span class="s1">))</span>
+<a name="l209"><span class="ln">209  </span></a>
+<a name="l210"><span class="ln">210  </span></a>    <span class="s0">def </span><span class="s1">_get_current_week(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l211"><span class="ln">211  </span></a>        <span class="s2">&quot;&quot;&quot;Return the start date of the current interval.&quot;&quot;&quot;</span>
+<a name="l212"><span class="ln">212  </span></a>        <span class="s0">return </span><span class="s1">date - datetime.timedelta(self._get_weekday(date))</span>
+<a name="l213"><span class="ln">213  </span></a>
+<a name="l214"><span class="ln">214  </span></a>    <span class="s0">def </span><span class="s1">_get_weekday(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l215"><span class="ln">215  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l216"><span class="ln">216  </span></a>        Return the weekday for a given date. 
+<a name="l217"><span class="ln">217  </span></a> 
+<a name="l218"><span class="ln">218  </span></a>        The first day according to the week format is 0 and the last day is 6. 
+<a name="l219"><span class="ln">219  </span></a>        &quot;&quot;&quot;</span>
+<a name="l220"><span class="ln">220  </span></a>        <span class="s1">week_format = self.get_week_format()</span>
+<a name="l221"><span class="ln">221  </span></a>        <span class="s0">if </span><span class="s1">week_format == </span><span class="s3">'%W'</span><span class="s1">:                 </span><span class="s5"># week starts on Monday</span>
+<a name="l222"><span class="ln">222  </span></a>            <span class="s0">return </span><span class="s1">date.weekday()</span>
+<a name="l223"><span class="ln">223  </span></a>        <span class="s0">elif </span><span class="s1">week_format == </span><span class="s3">'%U'</span><span class="s1">:               </span><span class="s5"># week starts on Sunday</span>
+<a name="l224"><span class="ln">224  </span></a>            <span class="s0">return </span><span class="s1">(date.weekday() + </span><span class="s4">1</span><span class="s1">) % </span><span class="s4">7</span>
+<a name="l225"><span class="ln">225  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l226"><span class="ln">226  </span></a>            <span class="s0">raise </span><span class="s1">ValueError(</span><span class="s3">&quot;unknown week format: %s&quot; </span><span class="s1">% week_format)</span>
+<a name="l227"><span class="ln">227  </span></a>
+<a name="l228"><span class="ln">228  </span></a>
+<a name="l229"><span class="ln">229  </span></a><span class="s0">class </span><span class="s1">DateMixin:</span>
+<a name="l230"><span class="ln">230  </span></a>    <span class="s2">&quot;&quot;&quot;Mixin class for views manipulating date-based data.&quot;&quot;&quot;</span>
+<a name="l231"><span class="ln">231  </span></a>    <span class="s1">date_field = </span><span class="s0">None</span>
+<a name="l232"><span class="ln">232  </span></a>    <span class="s1">allow_future = </span><span class="s0">False</span>
+<a name="l233"><span class="ln">233  </span></a>
+<a name="l234"><span class="ln">234  </span></a>    <span class="s0">def </span><span class="s1">get_date_field(self):</span>
+<a name="l235"><span class="ln">235  </span></a>        <span class="s2">&quot;&quot;&quot;Get the name of the date field to be used to filter by.&quot;&quot;&quot;</span>
+<a name="l236"><span class="ln">236  </span></a>        <span class="s0">if </span><span class="s1">self.date_field </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l237"><span class="ln">237  </span></a>            <span class="s0">raise </span><span class="s1">ImproperlyConfigured(</span><span class="s3">&quot;%s.date_field is required.&quot; </span><span class="s1">% self.__class__.__name__)</span>
+<a name="l238"><span class="ln">238  </span></a>        <span class="s0">return </span><span class="s1">self.date_field</span>
+<a name="l239"><span class="ln">239  </span></a>
+<a name="l240"><span class="ln">240  </span></a>    <span class="s0">def </span><span class="s1">get_allow_future(self):</span>
+<a name="l241"><span class="ln">241  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l242"><span class="ln">242  </span></a>        Return `True` if the view should be allowed to display objects from 
+<a name="l243"><span class="ln">243  </span></a>        the future. 
+<a name="l244"><span class="ln">244  </span></a>        &quot;&quot;&quot;</span>
+<a name="l245"><span class="ln">245  </span></a>        <span class="s0">return </span><span class="s1">self.allow_future</span>
+<a name="l246"><span class="ln">246  </span></a>
+<a name="l247"><span class="ln">247  </span></a>    <span class="s5"># Note: the following three methods only work in subclasses that also</span>
+<a name="l248"><span class="ln">248  </span></a>    <span class="s5"># inherit SingleObjectMixin or MultipleObjectMixin.</span>
+<a name="l249"><span class="ln">249  </span></a>
+<a name="l250"><span class="ln">250  </span></a>    <span class="s1">@cached_property</span>
+<a name="l251"><span class="ln">251  </span></a>    <span class="s0">def </span><span class="s1">uses_datetime_field(self):</span>
+<a name="l252"><span class="ln">252  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l253"><span class="ln">253  </span></a>        Return `True` if the date field is a `DateTimeField` and `False` 
+<a name="l254"><span class="ln">254  </span></a>        if it's a `DateField`. 
+<a name="l255"><span class="ln">255  </span></a>        &quot;&quot;&quot;</span>
+<a name="l256"><span class="ln">256  </span></a>        <span class="s1">model = self.get_queryset().model </span><span class="s0">if </span><span class="s1">self.model </span><span class="s0">is None else </span><span class="s1">self.model</span>
+<a name="l257"><span class="ln">257  </span></a>        <span class="s1">field = model._meta.get_field(self.get_date_field())</span>
+<a name="l258"><span class="ln">258  </span></a>        <span class="s0">return </span><span class="s1">isinstance(field</span><span class="s0">, </span><span class="s1">models.DateTimeField)</span>
+<a name="l259"><span class="ln">259  </span></a>
+<a name="l260"><span class="ln">260  </span></a>    <span class="s0">def </span><span class="s1">_make_date_lookup_arg(self</span><span class="s0">, </span><span class="s1">value):</span>
+<a name="l261"><span class="ln">261  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l262"><span class="ln">262  </span></a>        Convert a date into a datetime when the date field is a DateTimeField. 
+<a name="l263"><span class="ln">263  </span></a> 
+<a name="l264"><span class="ln">264  </span></a>        When time zone support is enabled, `date` is assumed to be in the 
+<a name="l265"><span class="ln">265  </span></a>        current time zone, so that displayed items are consistent with the URL. 
+<a name="l266"><span class="ln">266  </span></a>        &quot;&quot;&quot;</span>
+<a name="l267"><span class="ln">267  </span></a>        <span class="s0">if </span><span class="s1">self.uses_datetime_field:</span>
+<a name="l268"><span class="ln">268  </span></a>            <span class="s1">value = datetime.datetime.combine(value</span><span class="s0">, </span><span class="s1">datetime.time.min)</span>
+<a name="l269"><span class="ln">269  </span></a>            <span class="s0">if </span><span class="s1">settings.USE_TZ:</span>
+<a name="l270"><span class="ln">270  </span></a>                <span class="s1">value = timezone.make_aware(value)</span>
+<a name="l271"><span class="ln">271  </span></a>        <span class="s0">return </span><span class="s1">value</span>
+<a name="l272"><span class="ln">272  </span></a>
+<a name="l273"><span class="ln">273  </span></a>    <span class="s0">def </span><span class="s1">_make_single_date_lookup(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l274"><span class="ln">274  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l275"><span class="ln">275  </span></a>        Get the lookup kwargs for filtering on a single date. 
+<a name="l276"><span class="ln">276  </span></a> 
+<a name="l277"><span class="ln">277  </span></a>        If the date field is a DateTimeField, we can't just filter on 
+<a name="l278"><span class="ln">278  </span></a>        date_field=date because that doesn't take the time into account. 
+<a name="l279"><span class="ln">279  </span></a>        &quot;&quot;&quot;</span>
+<a name="l280"><span class="ln">280  </span></a>        <span class="s1">date_field = self.get_date_field()</span>
+<a name="l281"><span class="ln">281  </span></a>        <span class="s0">if </span><span class="s1">self.uses_datetime_field:</span>
+<a name="l282"><span class="ln">282  </span></a>            <span class="s1">since = self._make_date_lookup_arg(date)</span>
+<a name="l283"><span class="ln">283  </span></a>            <span class="s1">until = self._make_date_lookup_arg(date + datetime.timedelta(days=</span><span class="s4">1</span><span class="s1">))</span>
+<a name="l284"><span class="ln">284  </span></a>            <span class="s0">return </span><span class="s1">{</span>
+<a name="l285"><span class="ln">285  </span></a>                <span class="s3">'%s__gte' </span><span class="s1">% date_field: since</span><span class="s0">,</span>
+<a name="l286"><span class="ln">286  </span></a>                <span class="s3">'%s__lt' </span><span class="s1">% date_field: until</span><span class="s0">,</span>
+<a name="l287"><span class="ln">287  </span></a>            <span class="s1">}</span>
+<a name="l288"><span class="ln">288  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l289"><span class="ln">289  </span></a>            <span class="s5"># Skip self._make_date_lookup_arg, it's a no-op in this branch.</span>
+<a name="l290"><span class="ln">290  </span></a>            <span class="s0">return </span><span class="s1">{date_field: date}</span>
+<a name="l291"><span class="ln">291  </span></a>
+<a name="l292"><span class="ln">292  </span></a>
+<a name="l293"><span class="ln">293  </span></a><span class="s0">class </span><span class="s1">BaseDateListView(MultipleObjectMixin</span><span class="s0">, </span><span class="s1">DateMixin</span><span class="s0">, </span><span class="s1">View):</span>
+<a name="l294"><span class="ln">294  </span></a>    <span class="s2">&quot;&quot;&quot;Abstract base class for date-based views displaying a list of objects.&quot;&quot;&quot;</span>
+<a name="l295"><span class="ln">295  </span></a>    <span class="s1">allow_empty = </span><span class="s0">False</span>
+<a name="l296"><span class="ln">296  </span></a>    <span class="s1">date_list_period = </span><span class="s3">'year'</span>
+<a name="l297"><span class="ln">297  </span></a>
+<a name="l298"><span class="ln">298  </span></a>    <span class="s0">def </span><span class="s1">get(self</span><span class="s0">, </span><span class="s1">request</span><span class="s0">, </span><span class="s1">*args</span><span class="s0">, </span><span class="s1">**kwargs):</span>
+<a name="l299"><span class="ln">299  </span></a>        <span class="s1">self.date_list</span><span class="s0">, </span><span class="s1">self.object_list</span><span class="s0">, </span><span class="s1">extra_context = self.get_dated_items()</span>
+<a name="l300"><span class="ln">300  </span></a>        <span class="s1">context = self.get_context_data(</span>
+<a name="l301"><span class="ln">301  </span></a>            <span class="s1">object_list=self.object_list</span><span class="s0">,</span>
+<a name="l302"><span class="ln">302  </span></a>            <span class="s1">date_list=self.date_list</span><span class="s0">,</span>
+<a name="l303"><span class="ln">303  </span></a>            <span class="s1">**extra_context</span>
+<a name="l304"><span class="ln">304  </span></a>        <span class="s1">)</span>
+<a name="l305"><span class="ln">305  </span></a>        <span class="s0">return </span><span class="s1">self.render_to_response(context)</span>
+<a name="l306"><span class="ln">306  </span></a>
+<a name="l307"><span class="ln">307  </span></a>    <span class="s0">def </span><span class="s1">get_dated_items(self):</span>
+<a name="l308"><span class="ln">308  </span></a>        <span class="s2">&quot;&quot;&quot;Obtain the list of dates and items.&quot;&quot;&quot;</span>
+<a name="l309"><span class="ln">309  </span></a>        <span class="s0">raise </span><span class="s1">NotImplementedError(</span><span class="s3">'A DateView must provide an implementation of get_dated_items()'</span><span class="s1">)</span>
+<a name="l310"><span class="ln">310  </span></a>
+<a name="l311"><span class="ln">311  </span></a>    <span class="s0">def </span><span class="s1">get_ordering(self):</span>
+<a name="l312"><span class="ln">312  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l313"><span class="ln">313  </span></a>        Return the field or fields to use for ordering the queryset; use the 
+<a name="l314"><span class="ln">314  </span></a>        date field by default. 
+<a name="l315"><span class="ln">315  </span></a>        &quot;&quot;&quot;</span>
+<a name="l316"><span class="ln">316  </span></a>        <span class="s0">return </span><span class="s3">'-%s' </span><span class="s1">% self.get_date_field() </span><span class="s0">if </span><span class="s1">self.ordering </span><span class="s0">is None else </span><span class="s1">self.ordering</span>
+<a name="l317"><span class="ln">317  </span></a>
+<a name="l318"><span class="ln">318  </span></a>    <span class="s0">def </span><span class="s1">get_dated_queryset(self</span><span class="s0">, </span><span class="s1">**lookup):</span>
+<a name="l319"><span class="ln">319  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l320"><span class="ln">320  </span></a>        Get a queryset properly filtered according to `allow_future` and any 
+<a name="l321"><span class="ln">321  </span></a>        extra lookup kwargs. 
+<a name="l322"><span class="ln">322  </span></a>        &quot;&quot;&quot;</span>
+<a name="l323"><span class="ln">323  </span></a>        <span class="s1">qs = self.get_queryset().filter(**lookup)</span>
+<a name="l324"><span class="ln">324  </span></a>        <span class="s1">date_field = self.get_date_field()</span>
+<a name="l325"><span class="ln">325  </span></a>        <span class="s1">allow_future = self.get_allow_future()</span>
+<a name="l326"><span class="ln">326  </span></a>        <span class="s1">allow_empty = self.get_allow_empty()</span>
+<a name="l327"><span class="ln">327  </span></a>        <span class="s1">paginate_by = self.get_paginate_by(qs)</span>
+<a name="l328"><span class="ln">328  </span></a>
+<a name="l329"><span class="ln">329  </span></a>        <span class="s0">if not </span><span class="s1">allow_future:</span>
+<a name="l330"><span class="ln">330  </span></a>            <span class="s1">now = timezone.now() </span><span class="s0">if </span><span class="s1">self.uses_datetime_field </span><span class="s0">else </span><span class="s1">timezone_today()</span>
+<a name="l331"><span class="ln">331  </span></a>            <span class="s1">qs = qs.filter(**{</span><span class="s3">'%s__lte' </span><span class="s1">% date_field: now})</span>
+<a name="l332"><span class="ln">332  </span></a>
+<a name="l333"><span class="ln">333  </span></a>        <span class="s0">if not </span><span class="s1">allow_empty:</span>
+<a name="l334"><span class="ln">334  </span></a>            <span class="s5"># When pagination is enabled, it's better to do a cheap query</span>
+<a name="l335"><span class="ln">335  </span></a>            <span class="s5"># than to load the unpaginated queryset in memory.</span>
+<a name="l336"><span class="ln">336  </span></a>            <span class="s1">is_empty = </span><span class="s0">not </span><span class="s1">qs </span><span class="s0">if </span><span class="s1">paginate_by </span><span class="s0">is None else not </span><span class="s1">qs.exists()</span>
+<a name="l337"><span class="ln">337  </span></a>            <span class="s0">if </span><span class="s1">is_empty:</span>
+<a name="l338"><span class="ln">338  </span></a>                <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">&quot;No %(verbose_name_plural)s available&quot;</span><span class="s1">) % {</span>
+<a name="l339"><span class="ln">339  </span></a>                    <span class="s3">'verbose_name_plural'</span><span class="s1">: qs.model._meta.verbose_name_plural</span><span class="s0">,</span>
+<a name="l340"><span class="ln">340  </span></a>                <span class="s1">})</span>
+<a name="l341"><span class="ln">341  </span></a>
+<a name="l342"><span class="ln">342  </span></a>        <span class="s0">return </span><span class="s1">qs</span>
+<a name="l343"><span class="ln">343  </span></a>
+<a name="l344"><span class="ln">344  </span></a>    <span class="s0">def </span><span class="s1">get_date_list_period(self):</span>
+<a name="l345"><span class="ln">345  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l346"><span class="ln">346  </span></a>        Get the aggregation period for the list of dates: 'year', 'month', or 
+<a name="l347"><span class="ln">347  </span></a>        'day'. 
+<a name="l348"><span class="ln">348  </span></a>        &quot;&quot;&quot;</span>
+<a name="l349"><span class="ln">349  </span></a>        <span class="s0">return </span><span class="s1">self.date_list_period</span>
+<a name="l350"><span class="ln">350  </span></a>
+<a name="l351"><span class="ln">351  </span></a>    <span class="s0">def </span><span class="s1">get_date_list(self</span><span class="s0">, </span><span class="s1">queryset</span><span class="s0">, </span><span class="s1">date_type=</span><span class="s0">None, </span><span class="s1">ordering=</span><span class="s3">'ASC'</span><span class="s1">):</span>
+<a name="l352"><span class="ln">352  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l353"><span class="ln">353  </span></a>        Get a date list by calling `queryset.dates/datetimes()`, checking 
+<a name="l354"><span class="ln">354  </span></a>        along the way for empty lists that aren't allowed. 
+<a name="l355"><span class="ln">355  </span></a>        &quot;&quot;&quot;</span>
+<a name="l356"><span class="ln">356  </span></a>        <span class="s1">date_field = self.get_date_field()</span>
+<a name="l357"><span class="ln">357  </span></a>        <span class="s1">allow_empty = self.get_allow_empty()</span>
+<a name="l358"><span class="ln">358  </span></a>        <span class="s0">if </span><span class="s1">date_type </span><span class="s0">is None</span><span class="s1">:</span>
+<a name="l359"><span class="ln">359  </span></a>            <span class="s1">date_type = self.get_date_list_period()</span>
+<a name="l360"><span class="ln">360  </span></a>
+<a name="l361"><span class="ln">361  </span></a>        <span class="s0">if </span><span class="s1">self.uses_datetime_field:</span>
+<a name="l362"><span class="ln">362  </span></a>            <span class="s1">date_list = queryset.datetimes(date_field</span><span class="s0">, </span><span class="s1">date_type</span><span class="s0">, </span><span class="s1">ordering)</span>
+<a name="l363"><span class="ln">363  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l364"><span class="ln">364  </span></a>            <span class="s1">date_list = queryset.dates(date_field</span><span class="s0">, </span><span class="s1">date_type</span><span class="s0">, </span><span class="s1">ordering)</span>
+<a name="l365"><span class="ln">365  </span></a>        <span class="s0">if </span><span class="s1">date_list </span><span class="s0">is not None and not </span><span class="s1">date_list </span><span class="s0">and not </span><span class="s1">allow_empty:</span>
+<a name="l366"><span class="ln">366  </span></a>            <span class="s0">raise </span><span class="s1">Http404(</span>
+<a name="l367"><span class="ln">367  </span></a>                <span class="s1">_(</span><span class="s3">&quot;No %(verbose_name_plural)s available&quot;</span><span class="s1">) % {</span>
+<a name="l368"><span class="ln">368  </span></a>                    <span class="s3">'verbose_name_plural'</span><span class="s1">: queryset.model._meta.verbose_name_plural</span><span class="s0">,</span>
+<a name="l369"><span class="ln">369  </span></a>                <span class="s1">}</span>
+<a name="l370"><span class="ln">370  </span></a>            <span class="s1">)</span>
+<a name="l371"><span class="ln">371  </span></a>
+<a name="l372"><span class="ln">372  </span></a>        <span class="s0">return </span><span class="s1">date_list</span>
+<a name="l373"><span class="ln">373  </span></a>
+<a name="l374"><span class="ln">374  </span></a>
+<a name="l375"><span class="ln">375  </span></a><span class="s0">class </span><span class="s1">BaseArchiveIndexView(BaseDateListView):</span>
+<a name="l376"><span class="ln">376  </span></a>    <span class="s2">&quot;&quot;&quot; 
+<a name="l377"><span class="ln">377  </span></a>    Base class for archives of date-based items. Requires a response mixin. 
+<a name="l378"><span class="ln">378  </span></a>    &quot;&quot;&quot;</span>
+<a name="l379"><span class="ln">379  </span></a>    <span class="s1">context_object_name = </span><span class="s3">'latest'</span>
+<a name="l380"><span class="ln">380  </span></a>
+<a name="l381"><span class="ln">381  </span></a>    <span class="s0">def </span><span class="s1">get_dated_items(self):</span>
+<a name="l382"><span class="ln">382  </span></a>        <span class="s2">&quot;&quot;&quot;Return (date_list, items, extra_context) for this request.&quot;&quot;&quot;</span>
+<a name="l383"><span class="ln">383  </span></a>        <span class="s1">qs = self.get_dated_queryset()</span>
+<a name="l384"><span class="ln">384  </span></a>        <span class="s1">date_list = self.get_date_list(qs</span><span class="s0">, </span><span class="s1">ordering=</span><span class="s3">'DESC'</span><span class="s1">)</span>
+<a name="l385"><span class="ln">385  </span></a>
+<a name="l386"><span class="ln">386  </span></a>        <span class="s0">if not </span><span class="s1">date_list:</span>
+<a name="l387"><span class="ln">387  </span></a>            <span class="s1">qs = qs.none()</span>
+<a name="l388"><span class="ln">388  </span></a>
+<a name="l389"><span class="ln">389  </span></a>        <span class="s0">return </span><span class="s1">(date_list</span><span class="s0">, </span><span class="s1">qs</span><span class="s0">, </span><span class="s1">{})</span>
+<a name="l390"><span class="ln">390  </span></a>
+<a name="l391"><span class="ln">391  </span></a>
+<a name="l392"><span class="ln">392  </span></a><span class="s0">class </span><span class="s1">ArchiveIndexView(MultipleObjectTemplateResponseMixin</span><span class="s0">, </span><span class="s1">BaseArchiveIndexView):</span>
+<a name="l393"><span class="ln">393  </span></a>    <span class="s2">&quot;&quot;&quot;Top-level archive of date-based items.&quot;&quot;&quot;</span>
+<a name="l394"><span class="ln">394  </span></a>    <span class="s1">template_name_suffix = </span><span class="s3">'_archive'</span>
+<a name="l395"><span class="ln">395  </span></a>
+<a name="l396"><span class="ln">396  </span></a>
+<a name="l397"><span class="ln">397  </span></a><span class="s0">class </span><span class="s1">BaseYearArchiveView(YearMixin</span><span class="s0">, </span><span class="s1">BaseDateListView):</span>
+<a name="l398"><span class="ln">398  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published in a given year.&quot;&quot;&quot;</span>
+<a name="l399"><span class="ln">399  </span></a>    <span class="s1">date_list_period = </span><span class="s3">'month'</span>
+<a name="l400"><span class="ln">400  </span></a>    <span class="s1">make_object_list = </span><span class="s0">False</span>
+<a name="l401"><span class="ln">401  </span></a>
+<a name="l402"><span class="ln">402  </span></a>    <span class="s0">def </span><span class="s1">get_dated_items(self):</span>
+<a name="l403"><span class="ln">403  </span></a>        <span class="s2">&quot;&quot;&quot;Return (date_list, items, extra_context) for this request.&quot;&quot;&quot;</span>
+<a name="l404"><span class="ln">404  </span></a>        <span class="s1">year = self.get_year()</span>
+<a name="l405"><span class="ln">405  </span></a>
+<a name="l406"><span class="ln">406  </span></a>        <span class="s1">date_field = self.get_date_field()</span>
+<a name="l407"><span class="ln">407  </span></a>        <span class="s1">date = _date_from_string(year</span><span class="s0">, </span><span class="s1">self.get_year_format())</span>
+<a name="l408"><span class="ln">408  </span></a>
+<a name="l409"><span class="ln">409  </span></a>        <span class="s1">since = self._make_date_lookup_arg(date)</span>
+<a name="l410"><span class="ln">410  </span></a>        <span class="s1">until = self._make_date_lookup_arg(self._get_next_year(date))</span>
+<a name="l411"><span class="ln">411  </span></a>        <span class="s1">lookup_kwargs = {</span>
+<a name="l412"><span class="ln">412  </span></a>            <span class="s3">'%s__gte' </span><span class="s1">% date_field: since</span><span class="s0">,</span>
+<a name="l413"><span class="ln">413  </span></a>            <span class="s3">'%s__lt' </span><span class="s1">% date_field: until</span><span class="s0">,</span>
+<a name="l414"><span class="ln">414  </span></a>        <span class="s1">}</span>
+<a name="l415"><span class="ln">415  </span></a>
+<a name="l416"><span class="ln">416  </span></a>        <span class="s1">qs = self.get_dated_queryset(**lookup_kwargs)</span>
+<a name="l417"><span class="ln">417  </span></a>        <span class="s1">date_list = self.get_date_list(qs)</span>
+<a name="l418"><span class="ln">418  </span></a>
+<a name="l419"><span class="ln">419  </span></a>        <span class="s0">if not </span><span class="s1">self.get_make_object_list():</span>
+<a name="l420"><span class="ln">420  </span></a>            <span class="s5"># We need this to be a queryset since parent classes introspect it</span>
+<a name="l421"><span class="ln">421  </span></a>            <span class="s5"># to find information about the model.</span>
+<a name="l422"><span class="ln">422  </span></a>            <span class="s1">qs = qs.none()</span>
+<a name="l423"><span class="ln">423  </span></a>
+<a name="l424"><span class="ln">424  </span></a>        <span class="s0">return </span><span class="s1">(date_list</span><span class="s0">, </span><span class="s1">qs</span><span class="s0">, </span><span class="s1">{</span>
+<a name="l425"><span class="ln">425  </span></a>            <span class="s3">'year'</span><span class="s1">: date</span><span class="s0">,</span>
+<a name="l426"><span class="ln">426  </span></a>            <span class="s3">'next_year'</span><span class="s1">: self.get_next_year(date)</span><span class="s0">,</span>
+<a name="l427"><span class="ln">427  </span></a>            <span class="s3">'previous_year'</span><span class="s1">: self.get_previous_year(date)</span><span class="s0">,</span>
+<a name="l428"><span class="ln">428  </span></a>        <span class="s1">})</span>
+<a name="l429"><span class="ln">429  </span></a>
+<a name="l430"><span class="ln">430  </span></a>    <span class="s0">def </span><span class="s1">get_make_object_list(self):</span>
+<a name="l431"><span class="ln">431  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l432"><span class="ln">432  </span></a>        Return `True` if this view should contain the full list of objects in 
+<a name="l433"><span class="ln">433  </span></a>        the given year. 
+<a name="l434"><span class="ln">434  </span></a>        &quot;&quot;&quot;</span>
+<a name="l435"><span class="ln">435  </span></a>        <span class="s0">return </span><span class="s1">self.make_object_list</span>
+<a name="l436"><span class="ln">436  </span></a>
+<a name="l437"><span class="ln">437  </span></a>
+<a name="l438"><span class="ln">438  </span></a><span class="s0">class </span><span class="s1">YearArchiveView(MultipleObjectTemplateResponseMixin</span><span class="s0">, </span><span class="s1">BaseYearArchiveView):</span>
+<a name="l439"><span class="ln">439  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published in a given year.&quot;&quot;&quot;</span>
+<a name="l440"><span class="ln">440  </span></a>    <span class="s1">template_name_suffix = </span><span class="s3">'_archive_year'</span>
+<a name="l441"><span class="ln">441  </span></a>
+<a name="l442"><span class="ln">442  </span></a>
+<a name="l443"><span class="ln">443  </span></a><span class="s0">class </span><span class="s1">BaseMonthArchiveView(YearMixin</span><span class="s0">, </span><span class="s1">MonthMixin</span><span class="s0">, </span><span class="s1">BaseDateListView):</span>
+<a name="l444"><span class="ln">444  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published in a given month.&quot;&quot;&quot;</span>
+<a name="l445"><span class="ln">445  </span></a>    <span class="s1">date_list_period = </span><span class="s3">'day'</span>
+<a name="l446"><span class="ln">446  </span></a>
+<a name="l447"><span class="ln">447  </span></a>    <span class="s0">def </span><span class="s1">get_dated_items(self):</span>
+<a name="l448"><span class="ln">448  </span></a>        <span class="s2">&quot;&quot;&quot;Return (date_list, items, extra_context) for this request.&quot;&quot;&quot;</span>
+<a name="l449"><span class="ln">449  </span></a>        <span class="s1">year = self.get_year()</span>
+<a name="l450"><span class="ln">450  </span></a>        <span class="s1">month = self.get_month()</span>
+<a name="l451"><span class="ln">451  </span></a>
+<a name="l452"><span class="ln">452  </span></a>        <span class="s1">date_field = self.get_date_field()</span>
+<a name="l453"><span class="ln">453  </span></a>        <span class="s1">date = _date_from_string(year</span><span class="s0">, </span><span class="s1">self.get_year_format()</span><span class="s0">,</span>
+<a name="l454"><span class="ln">454  </span></a>                                 <span class="s1">month</span><span class="s0">, </span><span class="s1">self.get_month_format())</span>
+<a name="l455"><span class="ln">455  </span></a>
+<a name="l456"><span class="ln">456  </span></a>        <span class="s1">since = self._make_date_lookup_arg(date)</span>
+<a name="l457"><span class="ln">457  </span></a>        <span class="s1">until = self._make_date_lookup_arg(self._get_next_month(date))</span>
+<a name="l458"><span class="ln">458  </span></a>        <span class="s1">lookup_kwargs = {</span>
+<a name="l459"><span class="ln">459  </span></a>            <span class="s3">'%s__gte' </span><span class="s1">% date_field: since</span><span class="s0">,</span>
+<a name="l460"><span class="ln">460  </span></a>            <span class="s3">'%s__lt' </span><span class="s1">% date_field: until</span><span class="s0">,</span>
+<a name="l461"><span class="ln">461  </span></a>        <span class="s1">}</span>
+<a name="l462"><span class="ln">462  </span></a>
+<a name="l463"><span class="ln">463  </span></a>        <span class="s1">qs = self.get_dated_queryset(**lookup_kwargs)</span>
+<a name="l464"><span class="ln">464  </span></a>        <span class="s1">date_list = self.get_date_list(qs)</span>
+<a name="l465"><span class="ln">465  </span></a>
+<a name="l466"><span class="ln">466  </span></a>        <span class="s0">return </span><span class="s1">(date_list</span><span class="s0">, </span><span class="s1">qs</span><span class="s0">, </span><span class="s1">{</span>
+<a name="l467"><span class="ln">467  </span></a>            <span class="s3">'month'</span><span class="s1">: date</span><span class="s0">,</span>
+<a name="l468"><span class="ln">468  </span></a>            <span class="s3">'next_month'</span><span class="s1">: self.get_next_month(date)</span><span class="s0">,</span>
+<a name="l469"><span class="ln">469  </span></a>            <span class="s3">'previous_month'</span><span class="s1">: self.get_previous_month(date)</span><span class="s0">,</span>
+<a name="l470"><span class="ln">470  </span></a>        <span class="s1">})</span>
+<a name="l471"><span class="ln">471  </span></a>
+<a name="l472"><span class="ln">472  </span></a>
+<a name="l473"><span class="ln">473  </span></a><span class="s0">class </span><span class="s1">MonthArchiveView(MultipleObjectTemplateResponseMixin</span><span class="s0">, </span><span class="s1">BaseMonthArchiveView):</span>
+<a name="l474"><span class="ln">474  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published in a given month.&quot;&quot;&quot;</span>
+<a name="l475"><span class="ln">475  </span></a>    <span class="s1">template_name_suffix = </span><span class="s3">'_archive_month'</span>
+<a name="l476"><span class="ln">476  </span></a>
+<a name="l477"><span class="ln">477  </span></a>
+<a name="l478"><span class="ln">478  </span></a><span class="s0">class </span><span class="s1">BaseWeekArchiveView(YearMixin</span><span class="s0">, </span><span class="s1">WeekMixin</span><span class="s0">, </span><span class="s1">BaseDateListView):</span>
+<a name="l479"><span class="ln">479  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published in a given week.&quot;&quot;&quot;</span>
+<a name="l480"><span class="ln">480  </span></a>
+<a name="l481"><span class="ln">481  </span></a>    <span class="s0">def </span><span class="s1">get_dated_items(self):</span>
+<a name="l482"><span class="ln">482  </span></a>        <span class="s2">&quot;&quot;&quot;Return (date_list, items, extra_context) for this request.&quot;&quot;&quot;</span>
+<a name="l483"><span class="ln">483  </span></a>        <span class="s1">year = self.get_year()</span>
+<a name="l484"><span class="ln">484  </span></a>        <span class="s1">week = self.get_week()</span>
+<a name="l485"><span class="ln">485  </span></a>
+<a name="l486"><span class="ln">486  </span></a>        <span class="s1">date_field = self.get_date_field()</span>
+<a name="l487"><span class="ln">487  </span></a>        <span class="s1">week_format = self.get_week_format()</span>
+<a name="l488"><span class="ln">488  </span></a>        <span class="s1">week_choices = {</span><span class="s3">'%W'</span><span class="s1">: </span><span class="s3">'1'</span><span class="s0">, </span><span class="s3">'%U'</span><span class="s1">: </span><span class="s3">'0'</span><span class="s1">}</span>
+<a name="l489"><span class="ln">489  </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l490"><span class="ln">490  </span></a>            <span class="s1">week_start = week_choices[week_format]</span>
+<a name="l491"><span class="ln">491  </span></a>        <span class="s0">except </span><span class="s1">KeyError:</span>
+<a name="l492"><span class="ln">492  </span></a>            <span class="s0">raise </span><span class="s1">ValueError(</span><span class="s3">'Unknown week format %r. Choices are: %s' </span><span class="s1">% (</span>
+<a name="l493"><span class="ln">493  </span></a>                <span class="s1">week_format</span><span class="s0">,</span>
+<a name="l494"><span class="ln">494  </span></a>                <span class="s3">', '</span><span class="s1">.join(sorted(week_choices))</span><span class="s0">,</span>
+<a name="l495"><span class="ln">495  </span></a>            <span class="s1">))</span>
+<a name="l496"><span class="ln">496  </span></a>        <span class="s1">date = _date_from_string(year</span><span class="s0">, </span><span class="s1">self.get_year_format()</span><span class="s0">,</span>
+<a name="l497"><span class="ln">497  </span></a>                                 <span class="s1">week_start</span><span class="s0">, </span><span class="s3">'%w'</span><span class="s0">,</span>
+<a name="l498"><span class="ln">498  </span></a>                                 <span class="s1">week</span><span class="s0">, </span><span class="s1">week_format)</span>
+<a name="l499"><span class="ln">499  </span></a>
+<a name="l500"><span class="ln">500  </span></a>        <span class="s1">since = self._make_date_lookup_arg(date)</span>
+<a name="l501"><span class="ln">501  </span></a>        <span class="s1">until = self._make_date_lookup_arg(self._get_next_week(date))</span>
+<a name="l502"><span class="ln">502  </span></a>        <span class="s1">lookup_kwargs = {</span>
+<a name="l503"><span class="ln">503  </span></a>            <span class="s3">'%s__gte' </span><span class="s1">% date_field: since</span><span class="s0">,</span>
+<a name="l504"><span class="ln">504  </span></a>            <span class="s3">'%s__lt' </span><span class="s1">% date_field: until</span><span class="s0">,</span>
+<a name="l505"><span class="ln">505  </span></a>        <span class="s1">}</span>
+<a name="l506"><span class="ln">506  </span></a>
+<a name="l507"><span class="ln">507  </span></a>        <span class="s1">qs = self.get_dated_queryset(**lookup_kwargs)</span>
+<a name="l508"><span class="ln">508  </span></a>
+<a name="l509"><span class="ln">509  </span></a>        <span class="s0">return </span><span class="s1">(</span><span class="s0">None, </span><span class="s1">qs</span><span class="s0">, </span><span class="s1">{</span>
+<a name="l510"><span class="ln">510  </span></a>            <span class="s3">'week'</span><span class="s1">: date</span><span class="s0">,</span>
+<a name="l511"><span class="ln">511  </span></a>            <span class="s3">'next_week'</span><span class="s1">: self.get_next_week(date)</span><span class="s0">,</span>
+<a name="l512"><span class="ln">512  </span></a>            <span class="s3">'previous_week'</span><span class="s1">: self.get_previous_week(date)</span><span class="s0">,</span>
+<a name="l513"><span class="ln">513  </span></a>        <span class="s1">})</span>
+<a name="l514"><span class="ln">514  </span></a>
+<a name="l515"><span class="ln">515  </span></a>
+<a name="l516"><span class="ln">516  </span></a><span class="s0">class </span><span class="s1">WeekArchiveView(MultipleObjectTemplateResponseMixin</span><span class="s0">, </span><span class="s1">BaseWeekArchiveView):</span>
+<a name="l517"><span class="ln">517  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published in a given week.&quot;&quot;&quot;</span>
+<a name="l518"><span class="ln">518  </span></a>    <span class="s1">template_name_suffix = </span><span class="s3">'_archive_week'</span>
+<a name="l519"><span class="ln">519  </span></a>
+<a name="l520"><span class="ln">520  </span></a>
+<a name="l521"><span class="ln">521  </span></a><span class="s0">class </span><span class="s1">BaseDayArchiveView(YearMixin</span><span class="s0">, </span><span class="s1">MonthMixin</span><span class="s0">, </span><span class="s1">DayMixin</span><span class="s0">, </span><span class="s1">BaseDateListView):</span>
+<a name="l522"><span class="ln">522  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published on a given day.&quot;&quot;&quot;</span>
+<a name="l523"><span class="ln">523  </span></a>    <span class="s0">def </span><span class="s1">get_dated_items(self):</span>
+<a name="l524"><span class="ln">524  </span></a>        <span class="s2">&quot;&quot;&quot;Return (date_list, items, extra_context) for this request.&quot;&quot;&quot;</span>
+<a name="l525"><span class="ln">525  </span></a>        <span class="s1">year = self.get_year()</span>
+<a name="l526"><span class="ln">526  </span></a>        <span class="s1">month = self.get_month()</span>
+<a name="l527"><span class="ln">527  </span></a>        <span class="s1">day = self.get_day()</span>
+<a name="l528"><span class="ln">528  </span></a>
+<a name="l529"><span class="ln">529  </span></a>        <span class="s1">date = _date_from_string(year</span><span class="s0">, </span><span class="s1">self.get_year_format()</span><span class="s0">,</span>
+<a name="l530"><span class="ln">530  </span></a>                                 <span class="s1">month</span><span class="s0">, </span><span class="s1">self.get_month_format()</span><span class="s0">,</span>
+<a name="l531"><span class="ln">531  </span></a>                                 <span class="s1">day</span><span class="s0">, </span><span class="s1">self.get_day_format())</span>
+<a name="l532"><span class="ln">532  </span></a>
+<a name="l533"><span class="ln">533  </span></a>        <span class="s0">return </span><span class="s1">self._get_dated_items(date)</span>
+<a name="l534"><span class="ln">534  </span></a>
+<a name="l535"><span class="ln">535  </span></a>    <span class="s0">def </span><span class="s1">_get_dated_items(self</span><span class="s0">, </span><span class="s1">date):</span>
+<a name="l536"><span class="ln">536  </span></a>        <span class="s2">&quot;&quot;&quot; 
+<a name="l537"><span class="ln">537  </span></a>        Do the actual heavy lifting of getting the dated items; this accepts a 
+<a name="l538"><span class="ln">538  </span></a>        date object so that TodayArchiveView can be trivial. 
+<a name="l539"><span class="ln">539  </span></a>        &quot;&quot;&quot;</span>
+<a name="l540"><span class="ln">540  </span></a>        <span class="s1">lookup_kwargs = self._make_single_date_lookup(date)</span>
+<a name="l541"><span class="ln">541  </span></a>        <span class="s1">qs = self.get_dated_queryset(**lookup_kwargs)</span>
+<a name="l542"><span class="ln">542  </span></a>
+<a name="l543"><span class="ln">543  </span></a>        <span class="s0">return </span><span class="s1">(</span><span class="s0">None, </span><span class="s1">qs</span><span class="s0">, </span><span class="s1">{</span>
+<a name="l544"><span class="ln">544  </span></a>            <span class="s3">'day'</span><span class="s1">: date</span><span class="s0">,</span>
+<a name="l545"><span class="ln">545  </span></a>            <span class="s3">'previous_day'</span><span class="s1">: self.get_previous_day(date)</span><span class="s0">,</span>
+<a name="l546"><span class="ln">546  </span></a>            <span class="s3">'next_day'</span><span class="s1">: self.get_next_day(date)</span><span class="s0">,</span>
+<a name="l547"><span class="ln">547  </span></a>            <span class="s3">'previous_month'</span><span class="s1">: self.get_previous_month(date)</span><span class="s0">,</span>
+<a name="l548"><span class="ln">548  </span></a>            <span class="s3">'next_month'</span><span class="s1">: self.get_next_month(date)</span>
+<a name="l549"><span class="ln">549  </span></a>        <span class="s1">})</span>
+<a name="l550"><span class="ln">550  </span></a>
+<a name="l551"><span class="ln">551  </span></a>
+<a name="l552"><span class="ln">552  </span></a><span class="s0">class </span><span class="s1">DayArchiveView(MultipleObjectTemplateResponseMixin</span><span class="s0">, </span><span class="s1">BaseDayArchiveView):</span>
+<a name="l553"><span class="ln">553  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published on a given day.&quot;&quot;&quot;</span>
+<a name="l554"><span class="ln">554  </span></a>    <span class="s1">template_name_suffix = </span><span class="s3">&quot;_archive_day&quot;</span>
+<a name="l555"><span class="ln">555  </span></a>
+<a name="l556"><span class="ln">556  </span></a>
+<a name="l557"><span class="ln">557  </span></a><span class="s0">class </span><span class="s1">BaseTodayArchiveView(BaseDayArchiveView):</span>
+<a name="l558"><span class="ln">558  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published today.&quot;&quot;&quot;</span>
+<a name="l559"><span class="ln">559  </span></a>
+<a name="l560"><span class="ln">560  </span></a>    <span class="s0">def </span><span class="s1">get_dated_items(self):</span>
+<a name="l561"><span class="ln">561  </span></a>        <span class="s2">&quot;&quot;&quot;Return (date_list, items, extra_context) for this request.&quot;&quot;&quot;</span>
+<a name="l562"><span class="ln">562  </span></a>        <span class="s0">return </span><span class="s1">self._get_dated_items(datetime.date.today())</span>
+<a name="l563"><span class="ln">563  </span></a>
+<a name="l564"><span class="ln">564  </span></a>
+<a name="l565"><span class="ln">565  </span></a><span class="s0">class </span><span class="s1">TodayArchiveView(MultipleObjectTemplateResponseMixin</span><span class="s0">, </span><span class="s1">BaseTodayArchiveView):</span>
+<a name="l566"><span class="ln">566  </span></a>    <span class="s2">&quot;&quot;&quot;List of objects published today.&quot;&quot;&quot;</span>
+<a name="l567"><span class="ln">567  </span></a>    <span class="s1">template_name_suffix = </span><span class="s3">&quot;_archive_day&quot;</span>
+<a name="l568"><span class="ln">568  </span></a>
+<a name="l569"><span class="ln">569  </span></a>
+<a name="l570"><span class="ln">570  </span></a><span class="s0">class </span><span class="s1">BaseDateDetailView(YearMixin</span><span class="s0">, </span><span class="s1">MonthMixin</span><span class="s0">, </span><span class="s1">DayMixin</span><span class="s0">, </span><span class="s1">DateMixin</span><span class="s0">, </span><span class="s1">BaseDetailView):</span>
+<a name="l571"><span class="ln">571  </span></a>    <span class="s2">&quot;&quot;&quot; 
+<a name="l572"><span class="ln">572  </span></a>    Detail view of a single object on a single date; this differs from the 
+<a name="l573"><span class="ln">573  </span></a>    standard DetailView by accepting a year/month/day in the URL. 
+<a name="l574"><span class="ln">574  </span></a>    &quot;&quot;&quot;</span>
+<a name="l575"><span class="ln">575  </span></a>    <span class="s0">def </span><span class="s1">get_object(self</span><span class="s0">, </span><span class="s1">queryset=</span><span class="s0">None</span><span class="s1">):</span>
+<a name="l576"><span class="ln">576  </span></a>        <span class="s2">&quot;&quot;&quot;Get the object this request displays.&quot;&quot;&quot;</span>
+<a name="l577"><span class="ln">577  </span></a>        <span class="s1">year = self.get_year()</span>
+<a name="l578"><span class="ln">578  </span></a>        <span class="s1">month = self.get_month()</span>
+<a name="l579"><span class="ln">579  </span></a>        <span class="s1">day = self.get_day()</span>
+<a name="l580"><span class="ln">580  </span></a>        <span class="s1">date = _date_from_string(year</span><span class="s0">, </span><span class="s1">self.get_year_format()</span><span class="s0">,</span>
+<a name="l581"><span class="ln">581  </span></a>                                 <span class="s1">month</span><span class="s0">, </span><span class="s1">self.get_month_format()</span><span class="s0">,</span>
+<a name="l582"><span class="ln">582  </span></a>                                 <span class="s1">day</span><span class="s0">, </span><span class="s1">self.get_day_format())</span>
+<a name="l583"><span class="ln">583  </span></a>
+<a name="l584"><span class="ln">584  </span></a>        <span class="s5"># Use a custom queryset if provided</span>
+<a name="l585"><span class="ln">585  </span></a>        <span class="s1">qs = self.get_queryset() </span><span class="s0">if </span><span class="s1">queryset </span><span class="s0">is None else </span><span class="s1">queryset</span>
+<a name="l586"><span class="ln">586  </span></a>
+<a name="l587"><span class="ln">587  </span></a>        <span class="s0">if not </span><span class="s1">self.get_allow_future() </span><span class="s0">and </span><span class="s1">date &gt; datetime.date.today():</span>
+<a name="l588"><span class="ln">588  </span></a>            <span class="s0">raise </span><span class="s1">Http404(_(</span>
+<a name="l589"><span class="ln">589  </span></a>                <span class="s3">&quot;Future %(verbose_name_plural)s not available because &quot;</span>
+<a name="l590"><span class="ln">590  </span></a>                <span class="s3">&quot;%(class_name)s.allow_future is False.&quot;</span>
+<a name="l591"><span class="ln">591  </span></a>            <span class="s1">) % {</span>
+<a name="l592"><span class="ln">592  </span></a>                <span class="s3">'verbose_name_plural'</span><span class="s1">: qs.model._meta.verbose_name_plural</span><span class="s0">,</span>
+<a name="l593"><span class="ln">593  </span></a>                <span class="s3">'class_name'</span><span class="s1">: self.__class__.__name__</span><span class="s0">,</span>
+<a name="l594"><span class="ln">594  </span></a>            <span class="s1">})</span>
+<a name="l595"><span class="ln">595  </span></a>
+<a name="l596"><span class="ln">596  </span></a>        <span class="s5"># Filter down a queryset from self.queryset using the date from the</span>
+<a name="l597"><span class="ln">597  </span></a>        <span class="s5"># URL. This'll get passed as the queryset to DetailView.get_object,</span>
+<a name="l598"><span class="ln">598  </span></a>        <span class="s5"># which'll handle the 404</span>
+<a name="l599"><span class="ln">599  </span></a>        <span class="s1">lookup_kwargs = self._make_single_date_lookup(date)</span>
+<a name="l600"><span class="ln">600  </span></a>        <span class="s1">qs = qs.filter(**lookup_kwargs)</span>
+<a name="l601"><span class="ln">601  </span></a>
+<a name="l602"><span class="ln">602  </span></a>        <span class="s0">return </span><span class="s1">super().get_object(queryset=qs)</span>
+<a name="l603"><span class="ln">603  </span></a>
+<a name="l604"><span class="ln">604  </span></a>
+<a name="l605"><span class="ln">605  </span></a><span class="s0">class </span><span class="s1">DateDetailView(SingleObjectTemplateResponseMixin</span><span class="s0">, </span><span class="s1">BaseDateDetailView):</span>
+<a name="l606"><span class="ln">606  </span></a>    <span class="s2">&quot;&quot;&quot; 
+<a name="l607"><span class="ln">607  </span></a>    Detail view of a single object on a single date; this differs from the 
+<a name="l608"><span class="ln">608  </span></a>    standard DetailView by accepting a year/month/day in the URL. 
+<a name="l609"><span class="ln">609  </span></a>    &quot;&quot;&quot;</span>
+<a name="l610"><span class="ln">610  </span></a>    <span class="s1">template_name_suffix = </span><span class="s3">'_detail'</span>
+<a name="l611"><span class="ln">611  </span></a>
+<a name="l612"><span class="ln">612  </span></a>
+<a name="l613"><span class="ln">613  </span></a><span class="s0">def </span><span class="s1">_date_from_string(year</span><span class="s0">, </span><span class="s1">year_format</span><span class="s0">, </span><span class="s1">month=</span><span class="s3">''</span><span class="s0">, </span><span class="s1">month_format=</span><span class="s3">''</span><span class="s0">, </span><span class="s1">day=</span><span class="s3">''</span><span class="s0">, </span><span class="s1">day_format=</span><span class="s3">''</span><span class="s0">, </span><span class="s1">delim=</span><span class="s3">'__'</span><span class="s1">):</span>
+<a name="l614"><span class="ln">614  </span></a>    <span class="s2">&quot;&quot;&quot; 
+<a name="l615"><span class="ln">615  </span></a>    Get a datetime.date object given a format string and a year, month, and day 
+<a name="l616"><span class="ln">616  </span></a>    (only year is mandatory). Raise a 404 for an invalid date. 
+<a name="l617"><span class="ln">617  </span></a>    &quot;&quot;&quot;</span>
+<a name="l618"><span class="ln">618  </span></a>    <span class="s1">format = year_format + delim + month_format + delim + day_format</span>
+<a name="l619"><span class="ln">619  </span></a>    <span class="s1">datestr = str(year) + delim + str(month) + delim + str(day)</span>
+<a name="l620"><span class="ln">620  </span></a>    <span class="s0">try</span><span class="s1">:</span>
+<a name="l621"><span class="ln">621  </span></a>        <span class="s0">return </span><span class="s1">datetime.datetime.strptime(datestr</span><span class="s0">, </span><span class="s1">format).date()</span>
+<a name="l622"><span class="ln">622  </span></a>    <span class="s0">except </span><span class="s1">ValueError:</span>
+<a name="l623"><span class="ln">623  </span></a>        <span class="s0">raise </span><span class="s1">Http404(_(</span><span class="s3">'Invalid date string “%(datestr)s” given format “%(format)s”'</span><span class="s1">) % {</span>
+<a name="l624"><span class="ln">624  </span></a>            <span class="s3">'datestr'</span><span class="s1">: datestr</span><span class="s0">,</span>
+<a name="l625"><span class="ln">625  </span></a>            <span class="s3">'format'</span><span class="s1">: format</span><span class="s0">,</span>
+<a name="l626"><span class="ln">626  </span></a>        <span class="s1">})</span>
+<a name="l627"><span class="ln">627  </span></a>
+<a name="l628"><span class="ln">628  </span></a>
+<a name="l629"><span class="ln">629  </span></a><span class="s0">def </span><span class="s1">_get_next_prev(generic_view</span><span class="s0">, </span><span class="s1">date</span><span class="s0">, </span><span class="s1">is_previous</span><span class="s0">, </span><span class="s1">period):</span>
+<a name="l630"><span class="ln">630  </span></a>    <span class="s2">&quot;&quot;&quot; 
+<a name="l631"><span class="ln">631  </span></a>    Get the next or the previous valid date. The idea is to allow links on 
+<a name="l632"><span class="ln">632  </span></a>    month/day views to never be 404s by never providing a date that'll be 
+<a name="l633"><span class="ln">633  </span></a>    invalid for the given view. 
+<a name="l634"><span class="ln">634  </span></a> 
+<a name="l635"><span class="ln">635  </span></a>    This is a bit complicated since it handles different intervals of time, 
+<a name="l636"><span class="ln">636  </span></a>    hence the coupling to generic_view. 
+<a name="l637"><span class="ln">637  </span></a> 
+<a name="l638"><span class="ln">638  </span></a>    However in essence the logic comes down to: 
+<a name="l639"><span class="ln">639  </span></a> 
+<a name="l640"><span class="ln">640  </span></a>        * If allow_empty and allow_future are both true, this is easy: just 
+<a name="l641"><span class="ln">641  </span></a>          return the naive result (just the next/previous day/week/month, 
+<a name="l642"><span class="ln">642  </span></a>          regardless of object existence.) 
+<a name="l643"><span class="ln">643  </span></a> 
+<a name="l644"><span class="ln">644  </span></a>        * If allow_empty is true, allow_future is false, and the naive result 
+<a name="l645"><span class="ln">645  </span></a>          isn't in the future, then return it; otherwise return None. 
+<a name="l646"><span class="ln">646  </span></a> 
+<a name="l647"><span class="ln">647  </span></a>        * If allow_empty is false and allow_future is true, return the next 
+<a name="l648"><span class="ln">648  </span></a>          date *that contains a valid object*, even if it's in the future. If 
+<a name="l649"><span class="ln">649  </span></a>          there are no next objects, return None. 
+<a name="l650"><span class="ln">650  </span></a> 
+<a name="l651"><span class="ln">651  </span></a>        * If allow_empty is false and allow_future is false, return the next 
+<a name="l652"><span class="ln">652  </span></a>          date that contains a valid object. If that date is in the future, or 
+<a name="l653"><span class="ln">653  </span></a>          if there are no next objects, return None. 
+<a name="l654"><span class="ln">654  </span></a>    &quot;&quot;&quot;</span>
+<a name="l655"><span class="ln">655  </span></a>    <span class="s1">date_field = generic_view.get_date_field()</span>
+<a name="l656"><span class="ln">656  </span></a>    <span class="s1">allow_empty = generic_view.get_allow_empty()</span>
+<a name="l657"><span class="ln">657  </span></a>    <span class="s1">allow_future = generic_view.get_allow_future()</span>
+<a name="l658"><span class="ln">658  </span></a>
+<a name="l659"><span class="ln">659  </span></a>    <span class="s1">get_current = getattr(generic_view</span><span class="s0">, </span><span class="s3">'_get_current_%s' </span><span class="s1">% period)</span>
+<a name="l660"><span class="ln">660  </span></a>    <span class="s1">get_next = getattr(generic_view</span><span class="s0">, </span><span class="s3">'_get_next_%s' </span><span class="s1">% period)</span>
+<a name="l661"><span class="ln">661  </span></a>
+<a name="l662"><span class="ln">662  </span></a>    <span class="s5"># Bounds of the current interval</span>
+<a name="l663"><span class="ln">663  </span></a>    <span class="s1">start</span><span class="s0">, </span><span class="s1">end = get_current(date)</span><span class="s0">, </span><span class="s1">get_next(date)</span>
+<a name="l664"><span class="ln">664  </span></a>
+<a name="l665"><span class="ln">665  </span></a>    <span class="s5"># If allow_empty is True, the naive result will be valid</span>
+<a name="l666"><span class="ln">666  </span></a>    <span class="s0">if </span><span class="s1">allow_empty:</span>
+<a name="l667"><span class="ln">667  </span></a>        <span class="s0">if </span><span class="s1">is_previous:</span>
+<a name="l668"><span class="ln">668  </span></a>            <span class="s1">result = get_current(start - datetime.timedelta(days=</span><span class="s4">1</span><span class="s1">))</span>
+<a name="l669"><span class="ln">669  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l670"><span class="ln">670  </span></a>            <span class="s1">result = end</span>
+<a name="l671"><span class="ln">671  </span></a>
+<a name="l672"><span class="ln">672  </span></a>        <span class="s0">if </span><span class="s1">allow_future </span><span class="s0">or </span><span class="s1">result &lt;= timezone_today():</span>
+<a name="l673"><span class="ln">673  </span></a>            <span class="s0">return </span><span class="s1">result</span>
+<a name="l674"><span class="ln">674  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l675"><span class="ln">675  </span></a>            <span class="s0">return None</span>
+<a name="l676"><span class="ln">676  </span></a>
+<a name="l677"><span class="ln">677  </span></a>    <span class="s5"># Otherwise, we'll need to go to the database to look for an object</span>
+<a name="l678"><span class="ln">678  </span></a>    <span class="s5"># whose date_field is at least (greater than/less than) the given</span>
+<a name="l679"><span class="ln">679  </span></a>    <span class="s5"># naive result</span>
+<a name="l680"><span class="ln">680  </span></a>    <span class="s0">else</span><span class="s1">:</span>
+<a name="l681"><span class="ln">681  </span></a>        <span class="s5"># Construct a lookup and an ordering depending on whether we're doing</span>
+<a name="l682"><span class="ln">682  </span></a>        <span class="s5"># a previous date or a next date lookup.</span>
+<a name="l683"><span class="ln">683  </span></a>        <span class="s0">if </span><span class="s1">is_previous:</span>
+<a name="l684"><span class="ln">684  </span></a>            <span class="s1">lookup = {</span><span class="s3">'%s__lt' </span><span class="s1">% date_field: generic_view._make_date_lookup_arg(start)}</span>
+<a name="l685"><span class="ln">685  </span></a>            <span class="s1">ordering = </span><span class="s3">'-%s' </span><span class="s1">% date_field</span>
+<a name="l686"><span class="ln">686  </span></a>        <span class="s0">else</span><span class="s1">:</span>
+<a name="l687"><span class="ln">687  </span></a>            <span class="s1">lookup = {</span><span class="s3">'%s__gte' </span><span class="s1">% date_field: generic_view._make_date_lookup_arg(end)}</span>
+<a name="l688"><span class="ln">688  </span></a>            <span class="s1">ordering = date_field</span>
+<a name="l689"><span class="ln">689  </span></a>
+<a name="l690"><span class="ln">690  </span></a>        <span class="s5"># Filter out objects in the future if appropriate.</span>
+<a name="l691"><span class="ln">691  </span></a>        <span class="s0">if not </span><span class="s1">allow_future:</span>
+<a name="l692"><span class="ln">692  </span></a>            <span class="s5"># Fortunately, to match the implementation of allow_future,</span>
+<a name="l693"><span class="ln">693  </span></a>            <span class="s5"># we need __lte, which doesn't conflict with __lt above.</span>
+<a name="l694"><span class="ln">694  </span></a>            <span class="s0">if </span><span class="s1">generic_view.uses_datetime_field:</span>
+<a name="l695"><span class="ln">695  </span></a>                <span class="s1">now = timezone.now()</span>
+<a name="l696"><span class="ln">696  </span></a>            <span class="s0">else</span><span class="s1">:</span>
+<a name="l697"><span class="ln">697  </span></a>                <span class="s1">now = timezone_today()</span>
+<a name="l698"><span class="ln">698  </span></a>            <span class="s1">lookup[</span><span class="s3">'%s__lte' </span><span class="s1">% date_field] = now</span>
+<a name="l699"><span class="ln">699  </span></a>
+<a name="l700"><span class="ln">700  </span></a>        <span class="s1">qs = generic_view.get_queryset().filter(**lookup).order_by(ordering)</span>
+<a name="l701"><span class="ln">701  </span></a>
+<a name="l702"><span class="ln">702  </span></a>        <span class="s5"># Snag the first object from the queryset; if it doesn't exist that</span>
+<a name="l703"><span class="ln">703  </span></a>        <span class="s5"># means there's no next/previous link available.</span>
+<a name="l704"><span class="ln">704  </span></a>        <span class="s0">try</span><span class="s1">:</span>
+<a name="l705"><span class="ln">705  </span></a>            <span class="s1">result = getattr(qs[</span><span class="s4">0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">date_field)</span>
+<a name="l706"><span class="ln">706  </span></a>        <span class="s0">except </span><span class="s1">IndexError:</span>
+<a name="l707"><span class="ln">707  </span></a>            <span class="s0">return None</span>
+<a name="l708"><span class="ln">708  </span></a>
+<a name="l709"><span class="ln">709  </span></a>        <span class="s5"># Convert datetimes to dates in the current time zone.</span>
+<a name="l710"><span class="ln">710  </span></a>        <span class="s0">if </span><span class="s1">generic_view.uses_datetime_field:</span>
+<a name="l711"><span class="ln">711  </span></a>            <span class="s0">if </span><span class="s1">settings.USE_TZ:</span>
+<a name="l712"><span class="ln">712  </span></a>                <span class="s1">result = timezone.localtime(result)</span>
+<a name="l713"><span class="ln">713  </span></a>            <span class="s1">result = result.date()</span>
+<a name="l714"><span class="ln">714  </span></a>
+<a name="l715"><span class="ln">715  </span></a>        <span class="s5"># Return the first day of the period.</span>
+<a name="l716"><span class="ln">716  </span></a>        <span class="s0">return </span><span class="s1">get_current(result)</span>
+<a name="l717"><span class="ln">717  </span></a>
+<a name="l718"><span class="ln">718  </span></a>
+<a name="l719"><span class="ln">719  </span></a><span class="s0">def </span><span class="s1">timezone_today():</span>
+<a name="l720"><span class="ln">720  </span></a>    <span class="s2">&quot;&quot;&quot;Return the current date in the current time zone.&quot;&quot;&quot;</span>
+<a name="l721"><span class="ln">721  </span></a>    <span class="s0">if </span><span class="s1">settings.USE_TZ:</span>
+<a name="l722"><span class="ln">722  </span></a>        <span class="s0">return </span><span class="s1">timezone.localdate()</span>
+<a name="l723"><span class="ln">723  </span></a>    <span class="s0">else</span><span class="s1">:</span>
+<a name="l724"><span class="ln">724  </span></a>        <span class="s0">return </span><span class="s1">datetime.date.today()</span>
+<a name="l725"><span class="ln">725  </span></a></pre>
+</body>
+</html>

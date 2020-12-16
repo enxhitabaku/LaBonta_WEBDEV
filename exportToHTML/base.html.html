@@ -1,0 +1,127 @@
+<html>
+<head>
+<title>base.html</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #a9b7c6;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #e8bf6a;}
+.s3 { color: #bababa;}
+.s4 { color: #a5c261;}
+.s5 { color: #808080;}
+.s6 { color: #6d9cbe;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+base.html</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">{% load i18n static %}</span><span class="s2">&lt;!DOCTYPE </span><span class="s3">html</span><span class="s2">&gt;</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">{% get_current_language as LANGUAGE_CODE %}{% get_current_language_bidi as LANGUAGE_BIDI %}</span>
+<a name="l3"><span class="ln">3    </span></a><span class="s2">&lt;html </span><span class="s3">lang</span><span class="s4">=&quot;{{ LANGUAGE_CODE|default:&quot;</span><span class="s3">en-us</span><span class="s0">&quot; }}&quot; {% if LANGUAGE_BIDI %}dir=&quot;rtl&quot;{% endif %}&gt;</span>
+<a name="l4"><span class="ln">4    </span></a><span class="s2">&lt;head&gt;</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s2">&lt;title&gt;</span><span class="s0">{% block title %}{% endblock %}</span><span class="s2">&lt;/title&gt;</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s2">&lt;link </span><span class="s3">rel</span><span class="s4">=&quot;stylesheet&quot; </span><span class="s3">type</span><span class="s4">=&quot;text/css&quot; </span><span class="s3">href</span><span class="s4">=&quot;{% block stylesheet %}{% static &quot;</span><span class="s3">admin</span><span class="s0">/css/base.css&quot; %}{% endblock %}&quot;&gt;</span>
+<a name="l7"><span class="ln">7    </span></a><span class="s0">{% if not is_popup and is_nav_sidebar_enabled %}</span>
+<a name="l8"><span class="ln">8    </span></a>  <span class="s2">&lt;link </span><span class="s3">rel</span><span class="s4">=&quot;stylesheet&quot; </span><span class="s3">type</span><span class="s4">=&quot;text/css&quot; </span><span class="s3">href</span><span class="s4">=&quot;{% static &quot;</span><span class="s3">admin</span><span class="s0">/css/nav_sidebar.css&quot; %}&quot;&gt;</span>
+<a name="l9"><span class="ln">9    </span></a>  <span class="s2">&lt;script </span><span class="s3">src</span><span class="s4">=&quot;{% static 'admin/js/nav_sidebar.js' %}&quot; </span><span class="s3">defer</span><span class="s2">&gt;&lt;/script&gt;</span>
+<a name="l10"><span class="ln">10   </span></a><span class="s0">{% endif %}</span>
+<a name="l11"><span class="ln">11   </span></a><span class="s0">{% block extrastyle %}{% endblock %}</span>
+<a name="l12"><span class="ln">12   </span></a><span class="s0">{% if LANGUAGE_BIDI %}</span><span class="s2">&lt;link </span><span class="s3">rel</span><span class="s4">=&quot;stylesheet&quot; </span><span class="s3">type</span><span class="s4">=&quot;text/css&quot; </span><span class="s3">href</span><span class="s4">=&quot;{% block stylesheet_rtl %}{% static &quot;</span><span class="s3">admin</span><span class="s0">/css/rtl.css&quot; %}{% endblock %}&quot;&gt;{% endif %}</span>
+<a name="l13"><span class="ln">13   </span></a><span class="s0">{% block extrahead %}{% endblock %}</span>
+<a name="l14"><span class="ln">14   </span></a><span class="s0">{% block responsive %}</span>
+<a name="l15"><span class="ln">15   </span></a>    <span class="s2">&lt;meta </span><span class="s3">name</span><span class="s4">=&quot;viewport&quot; </span><span class="s3">content</span><span class="s4">=&quot;user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0&quot;</span><span class="s2">&gt;</span>
+<a name="l16"><span class="ln">16   </span></a>    <span class="s2">&lt;link </span><span class="s3">rel</span><span class="s4">=&quot;stylesheet&quot; </span><span class="s3">type</span><span class="s4">=&quot;text/css&quot; </span><span class="s3">href</span><span class="s4">=&quot;{% static &quot;</span><span class="s3">admin</span><span class="s0">/css/responsive.css&quot; %}&quot;&gt;</span>
+<a name="l17"><span class="ln">17   </span></a>    <span class="s0">{% if LANGUAGE_BIDI %}</span><span class="s2">&lt;link </span><span class="s3">rel</span><span class="s4">=&quot;stylesheet&quot; </span><span class="s3">type</span><span class="s4">=&quot;text/css&quot; </span><span class="s3">href</span><span class="s4">=&quot;{% static &quot;</span><span class="s3">admin</span><span class="s0">/css/responsive_rtl.css&quot; %}&quot;&gt;{% endif %}</span>
+<a name="l18"><span class="ln">18   </span></a><span class="s0">{% endblock %}</span>
+<a name="l19"><span class="ln">19   </span></a><span class="s0">{% block blockbots %}</span><span class="s2">&lt;meta </span><span class="s3">name</span><span class="s4">=&quot;robots&quot; </span><span class="s3">content</span><span class="s4">=&quot;NONE,NOARCHIVE&quot;</span><span class="s2">&gt;</span><span class="s0">{% endblock %}</span>
+<a name="l20"><span class="ln">20   </span></a><span class="s2">&lt;/head&gt;</span>
+<a name="l21"><span class="ln">21   </span></a><span class="s0">{% load i18n %}</span>
+<a name="l22"><span class="ln">22   </span></a>
+<a name="l23"><span class="ln">23   </span></a><span class="s2">&lt;body </span><span class="s3">class</span><span class="s4">=&quot;{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}&quot;</span>
+<a name="l24"><span class="ln">24   </span></a>  <span class="s3">data-admin-utc-offset</span><span class="s4">=&quot;{% now &quot;</span><span class="s3">Z</span><span class="s0">&quot; %}&quot;&gt;</span>
+<a name="l25"><span class="ln">25   </span></a>
+<a name="l26"><span class="ln">26   </span></a><span class="s5">&lt;!-- Container --&gt;</span>
+<a name="l27"><span class="ln">27   </span></a><span class="s2">&lt;div </span><span class="s3">id</span><span class="s4">=&quot;container&quot;</span><span class="s2">&gt;</span>
+<a name="l28"><span class="ln">28   </span></a>
+<a name="l29"><span class="ln">29   </span></a>    <span class="s0">{% if not is_popup %}</span>
+<a name="l30"><span class="ln">30   </span></a>    <span class="s5">&lt;!-- Header --&gt;</span>
+<a name="l31"><span class="ln">31   </span></a>    <span class="s2">&lt;div </span><span class="s3">id</span><span class="s4">=&quot;header&quot;</span><span class="s2">&gt;</span>
+<a name="l32"><span class="ln">32   </span></a>        <span class="s2">&lt;div </span><span class="s3">id</span><span class="s4">=&quot;branding&quot;</span><span class="s2">&gt;</span>
+<a name="l33"><span class="ln">33   </span></a>        <span class="s0">{% block branding %}{% endblock %}</span>
+<a name="l34"><span class="ln">34   </span></a>        <span class="s2">&lt;/div&gt;</span>
+<a name="l35"><span class="ln">35   </span></a>        <span class="s0">{% block usertools %}</span>
+<a name="l36"><span class="ln">36   </span></a>        <span class="s0">{% if has_permission %}</span>
+<a name="l37"><span class="ln">37   </span></a>        <span class="s2">&lt;div </span><span class="s3">id</span><span class="s4">=&quot;user-tools&quot;</span><span class="s2">&gt;</span>
+<a name="l38"><span class="ln">38   </span></a>            <span class="s0">{% block welcome-msg %}</span>
+<a name="l39"><span class="ln">39   </span></a>                <span class="s0">{% translate 'Welcome,' %}</span>
+<a name="l40"><span class="ln">40   </span></a>                <span class="s2">&lt;strong&gt;</span><span class="s0">{% firstof user.get_short_name user.get_username %}</span><span class="s2">&lt;/strong&gt;</span><span class="s0">.</span>
+<a name="l41"><span class="ln">41   </span></a>            <span class="s0">{% endblock %}</span>
+<a name="l42"><span class="ln">42   </span></a>            <span class="s0">{% block userlinks %}</span>
+<a name="l43"><span class="ln">43   </span></a>                <span class="s0">{% if site_url %}</span>
+<a name="l44"><span class="ln">44   </span></a>                    <span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{{ site_url }}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate 'View site' %}</span><span class="s2">&lt;/a&gt; </span><span class="s0">/</span>
+<a name="l45"><span class="ln">45   </span></a>                <span class="s0">{% endif %}</span>
+<a name="l46"><span class="ln">46   </span></a>                <span class="s0">{% if user.is_active and user.is_staff %}</span>
+<a name="l47"><span class="ln">47   </span></a>                    <span class="s0">{% url 'django-admindocs-docroot' as docsroot %}</span>
+<a name="l48"><span class="ln">48   </span></a>                    <span class="s0">{% if docsroot %}</span>
+<a name="l49"><span class="ln">49   </span></a>                        <span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{{ docsroot }}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate 'Documentation' %}</span><span class="s2">&lt;/a&gt; </span><span class="s0">/</span>
+<a name="l50"><span class="ln">50   </span></a>                    <span class="s0">{% endif %}</span>
+<a name="l51"><span class="ln">51   </span></a>                <span class="s0">{% endif %}</span>
+<a name="l52"><span class="ln">52   </span></a>                <span class="s0">{% if user.has_usable_password %}</span>
+<a name="l53"><span class="ln">53   </span></a>                <span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url 'admin:password_change' %}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate 'Change password' %}</span><span class="s2">&lt;/a&gt; </span><span class="s0">/</span>
+<a name="l54"><span class="ln">54   </span></a>                <span class="s0">{% endif %}</span>
+<a name="l55"><span class="ln">55   </span></a>                <span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url 'admin:logout' %}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate 'Log out' %}</span><span class="s2">&lt;/a&gt;</span>
+<a name="l56"><span class="ln">56   </span></a>            <span class="s0">{% endblock %}</span>
+<a name="l57"><span class="ln">57   </span></a>        <span class="s2">&lt;/div&gt;</span>
+<a name="l58"><span class="ln">58   </span></a>        <span class="s0">{% endif %}</span>
+<a name="l59"><span class="ln">59   </span></a>        <span class="s0">{% endblock %}</span>
+<a name="l60"><span class="ln">60   </span></a>        <span class="s0">{% block nav-global %}{% endblock %}</span>
+<a name="l61"><span class="ln">61   </span></a>    <span class="s2">&lt;/div&gt;</span>
+<a name="l62"><span class="ln">62   </span></a>    <span class="s5">&lt;!-- END Header --&gt;</span>
+<a name="l63"><span class="ln">63   </span></a>    <span class="s0">{% block breadcrumbs %}</span>
+<a name="l64"><span class="ln">64   </span></a>    <span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;breadcrumbs&quot;</span><span class="s2">&gt;</span>
+<a name="l65"><span class="ln">65   </span></a>    <span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url 'admin:index' %}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate 'Home' %}</span><span class="s2">&lt;/a&gt;</span>
+<a name="l66"><span class="ln">66   </span></a>    <span class="s0">{% if title %} </span><span class="s6">&amp;rsaquo; </span><span class="s0">{{ title }}{% endif %}</span>
+<a name="l67"><span class="ln">67   </span></a>    <span class="s2">&lt;/div&gt;</span>
+<a name="l68"><span class="ln">68   </span></a>    <span class="s0">{% endblock %}</span>
+<a name="l69"><span class="ln">69   </span></a>    <span class="s0">{% endif %}</span>
+<a name="l70"><span class="ln">70   </span></a>
+<a name="l71"><span class="ln">71   </span></a>    <span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;main shifted&quot; </span><span class="s3">id</span><span class="s4">=&quot;main&quot;</span><span class="s2">&gt;</span>
+<a name="l72"><span class="ln">72   </span></a>      <span class="s0">{% if not is_popup and is_nav_sidebar_enabled %}</span>
+<a name="l73"><span class="ln">73   </span></a>        <span class="s0">{% block nav-sidebar %}</span>
+<a name="l74"><span class="ln">74   </span></a>          <span class="s0">{% include &quot;admin/nav_sidebar.html&quot; %}</span>
+<a name="l75"><span class="ln">75   </span></a>        <span class="s0">{% endblock %}</span>
+<a name="l76"><span class="ln">76   </span></a>      <span class="s0">{% endif %}</span>
+<a name="l77"><span class="ln">77   </span></a>      <span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;content&quot;</span><span class="s2">&gt;</span>
+<a name="l78"><span class="ln">78   </span></a>        <span class="s0">{% block messages %}</span>
+<a name="l79"><span class="ln">79   </span></a>          <span class="s0">{% if messages %}</span>
+<a name="l80"><span class="ln">80   </span></a>            <span class="s2">&lt;ul </span><span class="s3">class</span><span class="s4">=&quot;messagelist&quot;</span><span class="s2">&gt;</span><span class="s0">{% for message in messages %}</span>
+<a name="l81"><span class="ln">81   </span></a>              <span class="s2">&lt;li</span><span class="s0">{% if message.tags %} class=&quot;{{ message.tags }}&quot;{% endif %}&gt;{{ message|capfirst }}</span><span class="s2">&lt;/li&gt;</span>
+<a name="l82"><span class="ln">82   </span></a>            <span class="s0">{% endfor %}</span><span class="s2">&lt;/ul&gt;</span>
+<a name="l83"><span class="ln">83   </span></a>          <span class="s0">{% endif %}</span>
+<a name="l84"><span class="ln">84   </span></a>        <span class="s0">{% endblock messages %}</span>
+<a name="l85"><span class="ln">85   </span></a>        <span class="s5">&lt;!-- Content --&gt;</span>
+<a name="l86"><span class="ln">86   </span></a>        <span class="s2">&lt;div </span><span class="s3">id</span><span class="s4">=&quot;content&quot; </span><span class="s3">class</span><span class="s4">=&quot;{% block coltype %}colM{% endblock %}&quot;</span><span class="s2">&gt;</span>
+<a name="l87"><span class="ln">87   </span></a>          <span class="s0">{% block pretitle %}{% endblock %}</span>
+<a name="l88"><span class="ln">88   </span></a>          <span class="s0">{% block content_title %}{% if title %}</span><span class="s2">&lt;h1&gt;</span><span class="s0">{{ title }}</span><span class="s2">&lt;/h1&gt;</span><span class="s0">{% endif %}{% endblock %}</span>
+<a name="l89"><span class="ln">89   </span></a>          <span class="s0">{% block content %}</span>
+<a name="l90"><span class="ln">90   </span></a>            <span class="s0">{% block object-tools %}{% endblock %}</span>
+<a name="l91"><span class="ln">91   </span></a>            <span class="s0">{{ content }}</span>
+<a name="l92"><span class="ln">92   </span></a>          <span class="s0">{% endblock %}</span>
+<a name="l93"><span class="ln">93   </span></a>          <span class="s0">{% block sidebar %}{% endblock %}</span>
+<a name="l94"><span class="ln">94   </span></a>          <span class="s2">&lt;br </span><span class="s3">class</span><span class="s4">=&quot;clear&quot;</span><span class="s2">&gt;</span>
+<a name="l95"><span class="ln">95   </span></a>        <span class="s2">&lt;/div&gt;</span>
+<a name="l96"><span class="ln">96   </span></a>        <span class="s5">&lt;!-- END Content --&gt;</span>
+<a name="l97"><span class="ln">97   </span></a>        <span class="s0">{% block footer %}</span><span class="s2">&lt;div </span><span class="s3">id</span><span class="s4">=&quot;footer&quot;</span><span class="s2">&gt;&lt;/div&gt;</span><span class="s0">{% endblock %}</span>
+<a name="l98"><span class="ln">98   </span></a>      <span class="s2">&lt;/div&gt;</span>
+<a name="l99"><span class="ln">99   </span></a>    <span class="s2">&lt;/div&gt;</span>
+<a name="l100"><span class="ln">100  </span></a><span class="s2">&lt;/div&gt;</span>
+<a name="l101"><span class="ln">101  </span></a><span class="s5">&lt;!-- END Container --&gt;</span>
+<a name="l102"><span class="ln">102  </span></a><span class="s2">&lt;/body&gt;</span>
+<a name="l103"><span class="ln">103  </span></a><span class="s2">&lt;/html&gt;</span>
+<a name="l104"><span class="ln">104  </span></a></pre>
+</body>
+</html>

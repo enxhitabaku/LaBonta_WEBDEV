@@ -1,0 +1,401 @@
+<html>
+<head>
+<title>html.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #629755; font-style: italic;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #808080;}
+.s4 { color: #6a8759;}
+.s5 { color: #6897bb;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+html.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">&quot;&quot;&quot;HTML utilities suitable for global use.&quot;&quot;&quot;</span>
+<a name="l2"><span class="ln">2    </span></a>
+<a name="l3"><span class="ln">3    </span></a><span class="s2">import </span><span class="s1">html</span>
+<a name="l4"><span class="ln">4    </span></a><span class="s2">import </span><span class="s1">json</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s2">import </span><span class="s1">re</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s2">from </span><span class="s1">html.parser </span><span class="s2">import </span><span class="s1">HTMLParser</span>
+<a name="l7"><span class="ln">7    </span></a><span class="s2">from </span><span class="s1">urllib.parse </span><span class="s2">import </span><span class="s1">(</span>
+<a name="l8"><span class="ln">8    </span></a>    <span class="s1">parse_qsl</span><span class="s2">, </span><span class="s1">quote</span><span class="s2">, </span><span class="s1">unquote</span><span class="s2">, </span><span class="s1">urlencode</span><span class="s2">, </span><span class="s1">urlsplit</span><span class="s2">, </span><span class="s1">urlunsplit</span><span class="s2">,</span>
+<a name="l9"><span class="ln">9    </span></a><span class="s1">)</span>
+<a name="l10"><span class="ln">10   </span></a>
+<a name="l11"><span class="ln">11   </span></a><span class="s2">from </span><span class="s1">django.utils.encoding </span><span class="s2">import </span><span class="s1">punycode</span>
+<a name="l12"><span class="ln">12   </span></a><span class="s2">from </span><span class="s1">django.utils.functional </span><span class="s2">import </span><span class="s1">Promise</span><span class="s2">, </span><span class="s1">keep_lazy</span><span class="s2">, </span><span class="s1">keep_lazy_text</span>
+<a name="l13"><span class="ln">13   </span></a><span class="s2">from </span><span class="s1">django.utils.http </span><span class="s2">import </span><span class="s1">RFC3986_GENDELIMS</span><span class="s2">, </span><span class="s1">RFC3986_SUBDELIMS</span>
+<a name="l14"><span class="ln">14   </span></a><span class="s2">from </span><span class="s1">django.utils.regex_helper </span><span class="s2">import </span><span class="s1">_lazy_re_compile</span>
+<a name="l15"><span class="ln">15   </span></a><span class="s2">from </span><span class="s1">django.utils.safestring </span><span class="s2">import </span><span class="s1">SafeData</span><span class="s2">, </span><span class="s1">SafeString</span><span class="s2">, </span><span class="s1">mark_safe</span>
+<a name="l16"><span class="ln">16   </span></a><span class="s2">from </span><span class="s1">django.utils.text </span><span class="s2">import </span><span class="s1">normalize_newlines</span>
+<a name="l17"><span class="ln">17   </span></a>
+<a name="l18"><span class="ln">18   </span></a><span class="s3"># Configuration for urlize() function.</span>
+<a name="l19"><span class="ln">19   </span></a><span class="s1">TRAILING_PUNCTUATION_CHARS = </span><span class="s4">'.,:;!'</span>
+<a name="l20"><span class="ln">20   </span></a><span class="s1">WRAPPING_PUNCTUATION = [(</span><span class="s4">'('</span><span class="s2">, </span><span class="s4">')'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">(</span><span class="s4">'['</span><span class="s2">, </span><span class="s4">']'</span><span class="s1">)]</span>
+<a name="l21"><span class="ln">21   </span></a>
+<a name="l22"><span class="ln">22   </span></a><span class="s3"># List of possible strings used for bullets in bulleted lists.</span>
+<a name="l23"><span class="ln">23   </span></a><span class="s1">DOTS = [</span><span class="s4">'&amp;middot;'</span><span class="s2">, </span><span class="s4">'*'</span><span class="s2">, </span><span class="s4">'</span><span class="s2">\u2022</span><span class="s4">'</span><span class="s2">, </span><span class="s4">'&amp;#149;'</span><span class="s2">, </span><span class="s4">'&amp;bull;'</span><span class="s2">, </span><span class="s4">'&amp;#8226;'</span><span class="s1">]</span>
+<a name="l24"><span class="ln">24   </span></a>
+<a name="l25"><span class="ln">25   </span></a><span class="s1">word_split_re = _lazy_re_compile(</span><span class="s4">r'''([\s&lt;&gt;&quot;']+)'''</span><span class="s1">)</span>
+<a name="l26"><span class="ln">26   </span></a><span class="s1">simple_url_re = _lazy_re_compile(</span><span class="s4">r'^https?://\[?\w'</span><span class="s2">, </span><span class="s1">re.IGNORECASE)</span>
+<a name="l27"><span class="ln">27   </span></a><span class="s1">simple_url_2_re = _lazy_re_compile(</span>
+<a name="l28"><span class="ln">28   </span></a>    <span class="s4">r'^www\.|^(?!http)\w[^@]+\.(com|edu|gov|int|mil|net|org)($|/.*)$'</span><span class="s2">,</span>
+<a name="l29"><span class="ln">29   </span></a>    <span class="s1">re.IGNORECASE</span>
+<a name="l30"><span class="ln">30   </span></a><span class="s1">)</span>
+<a name="l31"><span class="ln">31   </span></a>
+<a name="l32"><span class="ln">32   </span></a>
+<a name="l33"><span class="ln">33   </span></a><span class="s1">@keep_lazy(str</span><span class="s2">, </span><span class="s1">SafeString)</span>
+<a name="l34"><span class="ln">34   </span></a><span class="s2">def </span><span class="s1">escape(text):</span>
+<a name="l35"><span class="ln">35   </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l36"><span class="ln">36   </span></a>    Return the given text with ampersands, quotes and angle brackets encoded 
+<a name="l37"><span class="ln">37   </span></a>    for use in HTML. 
+<a name="l38"><span class="ln">38   </span></a> 
+<a name="l39"><span class="ln">39   </span></a>    Always escape input, even if it's already escaped and marked as such. 
+<a name="l40"><span class="ln">40   </span></a>    This may result in double-escaping. If this is a concern, use 
+<a name="l41"><span class="ln">41   </span></a>    conditional_escape() instead. 
+<a name="l42"><span class="ln">42   </span></a>    &quot;&quot;&quot;</span>
+<a name="l43"><span class="ln">43   </span></a>    <span class="s2">return </span><span class="s1">mark_safe(html.escape(str(text)))</span>
+<a name="l44"><span class="ln">44   </span></a>
+<a name="l45"><span class="ln">45   </span></a>
+<a name="l46"><span class="ln">46   </span></a><span class="s1">_js_escapes = {</span>
+<a name="l47"><span class="ln">47   </span></a>    <span class="s1">ord(</span><span class="s4">'</span><span class="s2">\\</span><span class="s4">'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u005C'</span><span class="s2">,</span>
+<a name="l48"><span class="ln">48   </span></a>    <span class="s1">ord(</span><span class="s4">'</span><span class="s2">\'</span><span class="s4">'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u0027'</span><span class="s2">,</span>
+<a name="l49"><span class="ln">49   </span></a>    <span class="s1">ord(</span><span class="s4">'&quot;'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u0022'</span><span class="s2">,</span>
+<a name="l50"><span class="ln">50   </span></a>    <span class="s1">ord(</span><span class="s4">'&gt;'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u003E'</span><span class="s2">,</span>
+<a name="l51"><span class="ln">51   </span></a>    <span class="s1">ord(</span><span class="s4">'&lt;'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u003C'</span><span class="s2">,</span>
+<a name="l52"><span class="ln">52   </span></a>    <span class="s1">ord(</span><span class="s4">'&amp;'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u0026'</span><span class="s2">,</span>
+<a name="l53"><span class="ln">53   </span></a>    <span class="s1">ord(</span><span class="s4">'='</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u003D'</span><span class="s2">,</span>
+<a name="l54"><span class="ln">54   </span></a>    <span class="s1">ord(</span><span class="s4">'-'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u002D'</span><span class="s2">,</span>
+<a name="l55"><span class="ln">55   </span></a>    <span class="s1">ord(</span><span class="s4">';'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u003B'</span><span class="s2">,</span>
+<a name="l56"><span class="ln">56   </span></a>    <span class="s1">ord(</span><span class="s4">'`'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u0060'</span><span class="s2">,</span>
+<a name="l57"><span class="ln">57   </span></a>    <span class="s1">ord(</span><span class="s4">'</span><span class="s2">\u2028</span><span class="s4">'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u2028'</span><span class="s2">,</span>
+<a name="l58"><span class="ln">58   </span></a>    <span class="s1">ord(</span><span class="s4">'</span><span class="s2">\u2029</span><span class="s4">'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u2029'</span>
+<a name="l59"><span class="ln">59   </span></a><span class="s1">}</span>
+<a name="l60"><span class="ln">60   </span></a>
+<a name="l61"><span class="ln">61   </span></a><span class="s3"># Escape every ASCII character with a value less than 32.</span>
+<a name="l62"><span class="ln">62   </span></a><span class="s1">_js_escapes.update((ord(</span><span class="s4">'%c' </span><span class="s1">% z)</span><span class="s2">, </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u%04X' </span><span class="s1">% z) </span><span class="s2">for </span><span class="s1">z </span><span class="s2">in </span><span class="s1">range(</span><span class="s5">32</span><span class="s1">))</span>
+<a name="l63"><span class="ln">63   </span></a>
+<a name="l64"><span class="ln">64   </span></a>
+<a name="l65"><span class="ln">65   </span></a><span class="s1">@keep_lazy(str</span><span class="s2">, </span><span class="s1">SafeString)</span>
+<a name="l66"><span class="ln">66   </span></a><span class="s2">def </span><span class="s1">escapejs(value):</span>
+<a name="l67"><span class="ln">67   </span></a>    <span class="s0">&quot;&quot;&quot;Hex encode characters for use in JavaScript strings.&quot;&quot;&quot;</span>
+<a name="l68"><span class="ln">68   </span></a>    <span class="s2">return </span><span class="s1">mark_safe(str(value).translate(_js_escapes))</span>
+<a name="l69"><span class="ln">69   </span></a>
+<a name="l70"><span class="ln">70   </span></a>
+<a name="l71"><span class="ln">71   </span></a><span class="s1">_json_script_escapes = {</span>
+<a name="l72"><span class="ln">72   </span></a>    <span class="s1">ord(</span><span class="s4">'&gt;'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u003E'</span><span class="s2">,</span>
+<a name="l73"><span class="ln">73   </span></a>    <span class="s1">ord(</span><span class="s4">'&lt;'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u003C'</span><span class="s2">,</span>
+<a name="l74"><span class="ln">74   </span></a>    <span class="s1">ord(</span><span class="s4">'&amp;'</span><span class="s1">): </span><span class="s4">'</span><span class="s2">\\</span><span class="s4">u0026'</span><span class="s2">,</span>
+<a name="l75"><span class="ln">75   </span></a><span class="s1">}</span>
+<a name="l76"><span class="ln">76   </span></a>
+<a name="l77"><span class="ln">77   </span></a>
+<a name="l78"><span class="ln">78   </span></a><span class="s2">def </span><span class="s1">json_script(value</span><span class="s2">, </span><span class="s1">element_id):</span>
+<a name="l79"><span class="ln">79   </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l80"><span class="ln">80   </span></a>    Escape all the HTML/XML special characters with their unicode escapes, so 
+<a name="l81"><span class="ln">81   </span></a>    value is safe to be output anywhere except for inside a tag attribute. Wrap 
+<a name="l82"><span class="ln">82   </span></a>    the escaped JSON in a script tag. 
+<a name="l83"><span class="ln">83   </span></a>    &quot;&quot;&quot;</span>
+<a name="l84"><span class="ln">84   </span></a>    <span class="s2">from </span><span class="s1">django.core.serializers.json </span><span class="s2">import </span><span class="s1">DjangoJSONEncoder</span>
+<a name="l85"><span class="ln">85   </span></a>    <span class="s1">json_str = json.dumps(value</span><span class="s2">, </span><span class="s1">cls=DjangoJSONEncoder).translate(_json_script_escapes)</span>
+<a name="l86"><span class="ln">86   </span></a>    <span class="s2">return </span><span class="s1">format_html(</span>
+<a name="l87"><span class="ln">87   </span></a>        <span class="s4">'&lt;script id=&quot;{}&quot; type=&quot;application/json&quot;&gt;{}&lt;/script&gt;'</span><span class="s2">,</span>
+<a name="l88"><span class="ln">88   </span></a>        <span class="s1">element_id</span><span class="s2">, </span><span class="s1">mark_safe(json_str)</span>
+<a name="l89"><span class="ln">89   </span></a>    <span class="s1">)</span>
+<a name="l90"><span class="ln">90   </span></a>
+<a name="l91"><span class="ln">91   </span></a>
+<a name="l92"><span class="ln">92   </span></a><span class="s2">def </span><span class="s1">conditional_escape(text):</span>
+<a name="l93"><span class="ln">93   </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l94"><span class="ln">94   </span></a>    Similar to escape(), except that it doesn't operate on pre-escaped strings. 
+<a name="l95"><span class="ln">95   </span></a> 
+<a name="l96"><span class="ln">96   </span></a>    This function relies on the __html__ convention used both by Django's 
+<a name="l97"><span class="ln">97   </span></a>    SafeData class and by third-party libraries like markupsafe. 
+<a name="l98"><span class="ln">98   </span></a>    &quot;&quot;&quot;</span>
+<a name="l99"><span class="ln">99   </span></a>    <span class="s2">if </span><span class="s1">isinstance(text</span><span class="s2">, </span><span class="s1">Promise):</span>
+<a name="l100"><span class="ln">100  </span></a>        <span class="s1">text = str(text)</span>
+<a name="l101"><span class="ln">101  </span></a>    <span class="s2">if </span><span class="s1">hasattr(text</span><span class="s2">, </span><span class="s4">'__html__'</span><span class="s1">):</span>
+<a name="l102"><span class="ln">102  </span></a>        <span class="s2">return </span><span class="s1">text.__html__()</span>
+<a name="l103"><span class="ln">103  </span></a>    <span class="s2">else</span><span class="s1">:</span>
+<a name="l104"><span class="ln">104  </span></a>        <span class="s2">return </span><span class="s1">escape(text)</span>
+<a name="l105"><span class="ln">105  </span></a>
+<a name="l106"><span class="ln">106  </span></a>
+<a name="l107"><span class="ln">107  </span></a><span class="s2">def </span><span class="s1">format_html(format_string</span><span class="s2">, </span><span class="s1">*args</span><span class="s2">, </span><span class="s1">**kwargs):</span>
+<a name="l108"><span class="ln">108  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l109"><span class="ln">109  </span></a>    Similar to str.format, but pass all arguments through conditional_escape(), 
+<a name="l110"><span class="ln">110  </span></a>    and call mark_safe() on the result. This function should be used instead 
+<a name="l111"><span class="ln">111  </span></a>    of str.format or % interpolation to build up small HTML fragments. 
+<a name="l112"><span class="ln">112  </span></a>    &quot;&quot;&quot;</span>
+<a name="l113"><span class="ln">113  </span></a>    <span class="s1">args_safe = map(conditional_escape</span><span class="s2">, </span><span class="s1">args)</span>
+<a name="l114"><span class="ln">114  </span></a>    <span class="s1">kwargs_safe = {k: conditional_escape(v) </span><span class="s2">for </span><span class="s1">(k</span><span class="s2">, </span><span class="s1">v) </span><span class="s2">in </span><span class="s1">kwargs.items()}</span>
+<a name="l115"><span class="ln">115  </span></a>    <span class="s2">return </span><span class="s1">mark_safe(format_string.format(*args_safe</span><span class="s2">, </span><span class="s1">**kwargs_safe))</span>
+<a name="l116"><span class="ln">116  </span></a>
+<a name="l117"><span class="ln">117  </span></a>
+<a name="l118"><span class="ln">118  </span></a><span class="s2">def </span><span class="s1">format_html_join(sep</span><span class="s2">, </span><span class="s1">format_string</span><span class="s2">, </span><span class="s1">args_generator):</span>
+<a name="l119"><span class="ln">119  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l120"><span class="ln">120  </span></a>    A wrapper of format_html, for the common case of a group of arguments that 
+<a name="l121"><span class="ln">121  </span></a>    need to be formatted using the same format string, and then joined using 
+<a name="l122"><span class="ln">122  </span></a>    'sep'. 'sep' is also passed through conditional_escape. 
+<a name="l123"><span class="ln">123  </span></a> 
+<a name="l124"><span class="ln">124  </span></a>    'args_generator' should be an iterator that returns the sequence of 'args' 
+<a name="l125"><span class="ln">125  </span></a>    that will be passed to format_html. 
+<a name="l126"><span class="ln">126  </span></a> 
+<a name="l127"><span class="ln">127  </span></a>    Example: 
+<a name="l128"><span class="ln">128  </span></a> 
+<a name="l129"><span class="ln">129  </span></a>      format_html_join('\n', &quot;&lt;li&gt;{} {}&lt;/li&gt;&quot;, ((u.first_name, u.last_name) 
+<a name="l130"><span class="ln">130  </span></a>                                                  for u in users)) 
+<a name="l131"><span class="ln">131  </span></a>    &quot;&quot;&quot;</span>
+<a name="l132"><span class="ln">132  </span></a>    <span class="s2">return </span><span class="s1">mark_safe(conditional_escape(sep).join(</span>
+<a name="l133"><span class="ln">133  </span></a>        <span class="s1">format_html(format_string</span><span class="s2">, </span><span class="s1">*args)</span>
+<a name="l134"><span class="ln">134  </span></a>        <span class="s2">for </span><span class="s1">args </span><span class="s2">in </span><span class="s1">args_generator</span>
+<a name="l135"><span class="ln">135  </span></a>    <span class="s1">))</span>
+<a name="l136"><span class="ln">136  </span></a>
+<a name="l137"><span class="ln">137  </span></a>
+<a name="l138"><span class="ln">138  </span></a><span class="s1">@keep_lazy_text</span>
+<a name="l139"><span class="ln">139  </span></a><span class="s2">def </span><span class="s1">linebreaks(value</span><span class="s2">, </span><span class="s1">autoescape=</span><span class="s2">False</span><span class="s1">):</span>
+<a name="l140"><span class="ln">140  </span></a>    <span class="s0">&quot;&quot;&quot;Convert newlines into &lt;p&gt; and &lt;br&gt;s.&quot;&quot;&quot;</span>
+<a name="l141"><span class="ln">141  </span></a>    <span class="s1">value = normalize_newlines(value)</span>
+<a name="l142"><span class="ln">142  </span></a>    <span class="s1">paras = re.split(</span><span class="s4">'</span><span class="s2">\n</span><span class="s4">{2,}'</span><span class="s2">, </span><span class="s1">str(value))</span>
+<a name="l143"><span class="ln">143  </span></a>    <span class="s2">if </span><span class="s1">autoescape:</span>
+<a name="l144"><span class="ln">144  </span></a>        <span class="s1">paras = [</span><span class="s4">'&lt;p&gt;%s&lt;/p&gt;' </span><span class="s1">% escape(p).replace(</span><span class="s4">'</span><span class="s2">\n</span><span class="s4">'</span><span class="s2">, </span><span class="s4">'&lt;br&gt;'</span><span class="s1">) </span><span class="s2">for </span><span class="s1">p </span><span class="s2">in </span><span class="s1">paras]</span>
+<a name="l145"><span class="ln">145  </span></a>    <span class="s2">else</span><span class="s1">:</span>
+<a name="l146"><span class="ln">146  </span></a>        <span class="s1">paras = [</span><span class="s4">'&lt;p&gt;%s&lt;/p&gt;' </span><span class="s1">% p.replace(</span><span class="s4">'</span><span class="s2">\n</span><span class="s4">'</span><span class="s2">, </span><span class="s4">'&lt;br&gt;'</span><span class="s1">) </span><span class="s2">for </span><span class="s1">p </span><span class="s2">in </span><span class="s1">paras]</span>
+<a name="l147"><span class="ln">147  </span></a>    <span class="s2">return </span><span class="s4">'</span><span class="s2">\n\n</span><span class="s4">'</span><span class="s1">.join(paras)</span>
+<a name="l148"><span class="ln">148  </span></a>
+<a name="l149"><span class="ln">149  </span></a>
+<a name="l150"><span class="ln">150  </span></a><span class="s2">class </span><span class="s1">MLStripper(HTMLParser):</span>
+<a name="l151"><span class="ln">151  </span></a>    <span class="s2">def </span><span class="s1">__init__(self):</span>
+<a name="l152"><span class="ln">152  </span></a>        <span class="s1">super().__init__(convert_charrefs=</span><span class="s2">False</span><span class="s1">)</span>
+<a name="l153"><span class="ln">153  </span></a>        <span class="s1">self.reset()</span>
+<a name="l154"><span class="ln">154  </span></a>        <span class="s1">self.fed = []</span>
+<a name="l155"><span class="ln">155  </span></a>
+<a name="l156"><span class="ln">156  </span></a>    <span class="s2">def </span><span class="s1">handle_data(self</span><span class="s2">, </span><span class="s1">d):</span>
+<a name="l157"><span class="ln">157  </span></a>        <span class="s1">self.fed.append(d)</span>
+<a name="l158"><span class="ln">158  </span></a>
+<a name="l159"><span class="ln">159  </span></a>    <span class="s2">def </span><span class="s1">handle_entityref(self</span><span class="s2">, </span><span class="s1">name):</span>
+<a name="l160"><span class="ln">160  </span></a>        <span class="s1">self.fed.append(</span><span class="s4">'&amp;%s;' </span><span class="s1">% name)</span>
+<a name="l161"><span class="ln">161  </span></a>
+<a name="l162"><span class="ln">162  </span></a>    <span class="s2">def </span><span class="s1">handle_charref(self</span><span class="s2">, </span><span class="s1">name):</span>
+<a name="l163"><span class="ln">163  </span></a>        <span class="s1">self.fed.append(</span><span class="s4">'&amp;#%s;' </span><span class="s1">% name)</span>
+<a name="l164"><span class="ln">164  </span></a>
+<a name="l165"><span class="ln">165  </span></a>    <span class="s2">def </span><span class="s1">get_data(self):</span>
+<a name="l166"><span class="ln">166  </span></a>        <span class="s2">return </span><span class="s4">''</span><span class="s1">.join(self.fed)</span>
+<a name="l167"><span class="ln">167  </span></a>
+<a name="l168"><span class="ln">168  </span></a>
+<a name="l169"><span class="ln">169  </span></a><span class="s2">def </span><span class="s1">_strip_once(value):</span>
+<a name="l170"><span class="ln">170  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l171"><span class="ln">171  </span></a>    Internal tag stripping utility used by strip_tags. 
+<a name="l172"><span class="ln">172  </span></a>    &quot;&quot;&quot;</span>
+<a name="l173"><span class="ln">173  </span></a>    <span class="s1">s = MLStripper()</span>
+<a name="l174"><span class="ln">174  </span></a>    <span class="s1">s.feed(value)</span>
+<a name="l175"><span class="ln">175  </span></a>    <span class="s1">s.close()</span>
+<a name="l176"><span class="ln">176  </span></a>    <span class="s2">return </span><span class="s1">s.get_data()</span>
+<a name="l177"><span class="ln">177  </span></a>
+<a name="l178"><span class="ln">178  </span></a>
+<a name="l179"><span class="ln">179  </span></a><span class="s1">@keep_lazy_text</span>
+<a name="l180"><span class="ln">180  </span></a><span class="s2">def </span><span class="s1">strip_tags(value):</span>
+<a name="l181"><span class="ln">181  </span></a>    <span class="s0">&quot;&quot;&quot;Return the given HTML with all tags stripped.&quot;&quot;&quot;</span>
+<a name="l182"><span class="ln">182  </span></a>    <span class="s3"># Note: in typical case this loop executes _strip_once once. Loop condition</span>
+<a name="l183"><span class="ln">183  </span></a>    <span class="s3"># is redundant, but helps to reduce number of executions of _strip_once.</span>
+<a name="l184"><span class="ln">184  </span></a>    <span class="s1">value = str(value)</span>
+<a name="l185"><span class="ln">185  </span></a>    <span class="s2">while </span><span class="s4">'&lt;' </span><span class="s2">in </span><span class="s1">value </span><span class="s2">and </span><span class="s4">'&gt;' </span><span class="s2">in </span><span class="s1">value:</span>
+<a name="l186"><span class="ln">186  </span></a>        <span class="s1">new_value = _strip_once(value)</span>
+<a name="l187"><span class="ln">187  </span></a>        <span class="s2">if </span><span class="s1">value.count(</span><span class="s4">'&lt;'</span><span class="s1">) == new_value.count(</span><span class="s4">'&lt;'</span><span class="s1">):</span>
+<a name="l188"><span class="ln">188  </span></a>            <span class="s3"># _strip_once wasn't able to detect more tags.</span>
+<a name="l189"><span class="ln">189  </span></a>            <span class="s2">break</span>
+<a name="l190"><span class="ln">190  </span></a>        <span class="s1">value = new_value</span>
+<a name="l191"><span class="ln">191  </span></a>    <span class="s2">return </span><span class="s1">value</span>
+<a name="l192"><span class="ln">192  </span></a>
+<a name="l193"><span class="ln">193  </span></a>
+<a name="l194"><span class="ln">194  </span></a><span class="s1">@keep_lazy_text</span>
+<a name="l195"><span class="ln">195  </span></a><span class="s2">def </span><span class="s1">strip_spaces_between_tags(value):</span>
+<a name="l196"><span class="ln">196  </span></a>    <span class="s0">&quot;&quot;&quot;Return the given HTML with spaces between tags removed.&quot;&quot;&quot;</span>
+<a name="l197"><span class="ln">197  </span></a>    <span class="s2">return </span><span class="s1">re.sub(</span><span class="s4">r'&gt;\s+&lt;'</span><span class="s2">, </span><span class="s4">'&gt;&lt;'</span><span class="s2">, </span><span class="s1">str(value))</span>
+<a name="l198"><span class="ln">198  </span></a>
+<a name="l199"><span class="ln">199  </span></a>
+<a name="l200"><span class="ln">200  </span></a><span class="s2">def </span><span class="s1">smart_urlquote(url):</span>
+<a name="l201"><span class="ln">201  </span></a>    <span class="s0">&quot;&quot;&quot;Quote a URL if it isn't already quoted.&quot;&quot;&quot;</span>
+<a name="l202"><span class="ln">202  </span></a>    <span class="s2">def </span><span class="s1">unquote_quote(segment):</span>
+<a name="l203"><span class="ln">203  </span></a>        <span class="s1">segment = unquote(segment)</span>
+<a name="l204"><span class="ln">204  </span></a>        <span class="s3"># Tilde is part of RFC3986 Unreserved Characters</span>
+<a name="l205"><span class="ln">205  </span></a>        <span class="s3"># https://tools.ietf.org/html/rfc3986#section-2.3</span>
+<a name="l206"><span class="ln">206  </span></a>        <span class="s3"># See also https://bugs.python.org/issue16285</span>
+<a name="l207"><span class="ln">207  </span></a>        <span class="s2">return </span><span class="s1">quote(segment</span><span class="s2">, </span><span class="s1">safe=RFC3986_SUBDELIMS + RFC3986_GENDELIMS + </span><span class="s4">'~'</span><span class="s1">)</span>
+<a name="l208"><span class="ln">208  </span></a>
+<a name="l209"><span class="ln">209  </span></a>    <span class="s3"># Handle IDN before quoting.</span>
+<a name="l210"><span class="ln">210  </span></a>    <span class="s2">try</span><span class="s1">:</span>
+<a name="l211"><span class="ln">211  </span></a>        <span class="s1">scheme</span><span class="s2">, </span><span class="s1">netloc</span><span class="s2">, </span><span class="s1">path</span><span class="s2">, </span><span class="s1">query</span><span class="s2">, </span><span class="s1">fragment = urlsplit(url)</span>
+<a name="l212"><span class="ln">212  </span></a>    <span class="s2">except </span><span class="s1">ValueError:</span>
+<a name="l213"><span class="ln">213  </span></a>        <span class="s3"># invalid IPv6 URL (normally square brackets in hostname part).</span>
+<a name="l214"><span class="ln">214  </span></a>        <span class="s2">return </span><span class="s1">unquote_quote(url)</span>
+<a name="l215"><span class="ln">215  </span></a>
+<a name="l216"><span class="ln">216  </span></a>    <span class="s2">try</span><span class="s1">:</span>
+<a name="l217"><span class="ln">217  </span></a>        <span class="s1">netloc = punycode(netloc)  </span><span class="s3"># IDN -&gt; ACE</span>
+<a name="l218"><span class="ln">218  </span></a>    <span class="s2">except </span><span class="s1">UnicodeError:  </span><span class="s3"># invalid domain part</span>
+<a name="l219"><span class="ln">219  </span></a>        <span class="s2">return </span><span class="s1">unquote_quote(url)</span>
+<a name="l220"><span class="ln">220  </span></a>
+<a name="l221"><span class="ln">221  </span></a>    <span class="s2">if </span><span class="s1">query:</span>
+<a name="l222"><span class="ln">222  </span></a>        <span class="s3"># Separately unquoting key/value, so as to not mix querystring separators</span>
+<a name="l223"><span class="ln">223  </span></a>        <span class="s3"># included in query values. See #22267.</span>
+<a name="l224"><span class="ln">224  </span></a>        <span class="s1">query_parts = [(unquote(q[</span><span class="s5">0</span><span class="s1">])</span><span class="s2">, </span><span class="s1">unquote(q[</span><span class="s5">1</span><span class="s1">]))</span>
+<a name="l225"><span class="ln">225  </span></a>                       <span class="s2">for </span><span class="s1">q </span><span class="s2">in </span><span class="s1">parse_qsl(query</span><span class="s2">, </span><span class="s1">keep_blank_values=</span><span class="s2">True</span><span class="s1">)]</span>
+<a name="l226"><span class="ln">226  </span></a>        <span class="s3"># urlencode will take care of quoting</span>
+<a name="l227"><span class="ln">227  </span></a>        <span class="s1">query = urlencode(query_parts)</span>
+<a name="l228"><span class="ln">228  </span></a>
+<a name="l229"><span class="ln">229  </span></a>    <span class="s1">path = unquote_quote(path)</span>
+<a name="l230"><span class="ln">230  </span></a>    <span class="s1">fragment = unquote_quote(fragment)</span>
+<a name="l231"><span class="ln">231  </span></a>
+<a name="l232"><span class="ln">232  </span></a>    <span class="s2">return </span><span class="s1">urlunsplit((scheme</span><span class="s2">, </span><span class="s1">netloc</span><span class="s2">, </span><span class="s1">path</span><span class="s2">, </span><span class="s1">query</span><span class="s2">, </span><span class="s1">fragment))</span>
+<a name="l233"><span class="ln">233  </span></a>
+<a name="l234"><span class="ln">234  </span></a>
+<a name="l235"><span class="ln">235  </span></a><span class="s1">@keep_lazy_text</span>
+<a name="l236"><span class="ln">236  </span></a><span class="s2">def </span><span class="s1">urlize(text</span><span class="s2">, </span><span class="s1">trim_url_limit=</span><span class="s2">None, </span><span class="s1">nofollow=</span><span class="s2">False, </span><span class="s1">autoescape=</span><span class="s2">False</span><span class="s1">):</span>
+<a name="l237"><span class="ln">237  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l238"><span class="ln">238  </span></a>    Convert any URLs in text into clickable links. 
+<a name="l239"><span class="ln">239  </span></a> 
+<a name="l240"><span class="ln">240  </span></a>    Works on http://, https://, www. links, and also on links ending in one of 
+<a name="l241"><span class="ln">241  </span></a>    the original seven gTLDs (.com, .edu, .gov, .int, .mil, .net, and .org). 
+<a name="l242"><span class="ln">242  </span></a>    Links can have trailing punctuation (periods, commas, close-parens) and 
+<a name="l243"><span class="ln">243  </span></a>    leading punctuation (opening parens) and it'll still do the right thing. 
+<a name="l244"><span class="ln">244  </span></a> 
+<a name="l245"><span class="ln">245  </span></a>    If trim_url_limit is not None, truncate the URLs in the link text longer 
+<a name="l246"><span class="ln">246  </span></a>    than this limit to trim_url_limit - 1 characters and append an ellipsis. 
+<a name="l247"><span class="ln">247  </span></a> 
+<a name="l248"><span class="ln">248  </span></a>    If nofollow is True, give the links a rel=&quot;nofollow&quot; attribute. 
+<a name="l249"><span class="ln">249  </span></a> 
+<a name="l250"><span class="ln">250  </span></a>    If autoescape is True, autoescape the link text and URLs. 
+<a name="l251"><span class="ln">251  </span></a>    &quot;&quot;&quot;</span>
+<a name="l252"><span class="ln">252  </span></a>    <span class="s1">safe_input = isinstance(text</span><span class="s2">, </span><span class="s1">SafeData)</span>
+<a name="l253"><span class="ln">253  </span></a>
+<a name="l254"><span class="ln">254  </span></a>    <span class="s2">def </span><span class="s1">trim_url(x</span><span class="s2">, </span><span class="s1">limit=trim_url_limit):</span>
+<a name="l255"><span class="ln">255  </span></a>        <span class="s2">if </span><span class="s1">limit </span><span class="s2">is None or </span><span class="s1">len(x) &lt;= limit:</span>
+<a name="l256"><span class="ln">256  </span></a>            <span class="s2">return </span><span class="s1">x</span>
+<a name="l257"><span class="ln">257  </span></a>        <span class="s2">return </span><span class="s4">'%s…' </span><span class="s1">% x[:max(</span><span class="s5">0</span><span class="s2">, </span><span class="s1">limit - </span><span class="s5">1</span><span class="s1">)]</span>
+<a name="l258"><span class="ln">258  </span></a>
+<a name="l259"><span class="ln">259  </span></a>    <span class="s2">def </span><span class="s1">trim_punctuation(lead</span><span class="s2">, </span><span class="s1">middle</span><span class="s2">, </span><span class="s1">trail):</span>
+<a name="l260"><span class="ln">260  </span></a>        <span class="s0">&quot;&quot;&quot; 
+<a name="l261"><span class="ln">261  </span></a>        Trim trailing and wrapping punctuation from `middle`. Return the items 
+<a name="l262"><span class="ln">262  </span></a>        of the new state. 
+<a name="l263"><span class="ln">263  </span></a>        &quot;&quot;&quot;</span>
+<a name="l264"><span class="ln">264  </span></a>        <span class="s3"># Continue trimming until middle remains unchanged.</span>
+<a name="l265"><span class="ln">265  </span></a>        <span class="s1">trimmed_something = </span><span class="s2">True</span>
+<a name="l266"><span class="ln">266  </span></a>        <span class="s2">while </span><span class="s1">trimmed_something:</span>
+<a name="l267"><span class="ln">267  </span></a>            <span class="s1">trimmed_something = </span><span class="s2">False</span>
+<a name="l268"><span class="ln">268  </span></a>            <span class="s3"># Trim wrapping punctuation.</span>
+<a name="l269"><span class="ln">269  </span></a>            <span class="s2">for </span><span class="s1">opening</span><span class="s2">, </span><span class="s1">closing </span><span class="s2">in </span><span class="s1">WRAPPING_PUNCTUATION:</span>
+<a name="l270"><span class="ln">270  </span></a>                <span class="s2">if </span><span class="s1">middle.startswith(opening):</span>
+<a name="l271"><span class="ln">271  </span></a>                    <span class="s1">middle = middle[len(opening):]</span>
+<a name="l272"><span class="ln">272  </span></a>                    <span class="s1">lead += opening</span>
+<a name="l273"><span class="ln">273  </span></a>                    <span class="s1">trimmed_something = </span><span class="s2">True</span>
+<a name="l274"><span class="ln">274  </span></a>                <span class="s3"># Keep parentheses at the end only if they're balanced.</span>
+<a name="l275"><span class="ln">275  </span></a>                <span class="s2">if </span><span class="s1">(middle.endswith(closing) </span><span class="s2">and</span>
+<a name="l276"><span class="ln">276  </span></a>                        <span class="s1">middle.count(closing) == middle.count(opening) + </span><span class="s5">1</span><span class="s1">):</span>
+<a name="l277"><span class="ln">277  </span></a>                    <span class="s1">middle = middle[:-len(closing)]</span>
+<a name="l278"><span class="ln">278  </span></a>                    <span class="s1">trail = closing + trail</span>
+<a name="l279"><span class="ln">279  </span></a>                    <span class="s1">trimmed_something = </span><span class="s2">True</span>
+<a name="l280"><span class="ln">280  </span></a>            <span class="s3"># Trim trailing punctuation (after trimming wrapping punctuation,</span>
+<a name="l281"><span class="ln">281  </span></a>            <span class="s3"># as encoded entities contain ';'). Unescape entities to avoid</span>
+<a name="l282"><span class="ln">282  </span></a>            <span class="s3"># breaking them by removing ';'.</span>
+<a name="l283"><span class="ln">283  </span></a>            <span class="s1">middle_unescaped = html.unescape(middle)</span>
+<a name="l284"><span class="ln">284  </span></a>            <span class="s1">stripped = middle_unescaped.rstrip(TRAILING_PUNCTUATION_CHARS)</span>
+<a name="l285"><span class="ln">285  </span></a>            <span class="s2">if </span><span class="s1">middle_unescaped != stripped:</span>
+<a name="l286"><span class="ln">286  </span></a>                <span class="s1">trail = middle[len(stripped):] + trail</span>
+<a name="l287"><span class="ln">287  </span></a>                <span class="s1">middle = middle[:len(stripped) - len(middle_unescaped)]</span>
+<a name="l288"><span class="ln">288  </span></a>                <span class="s1">trimmed_something = </span><span class="s2">True</span>
+<a name="l289"><span class="ln">289  </span></a>        <span class="s2">return </span><span class="s1">lead</span><span class="s2">, </span><span class="s1">middle</span><span class="s2">, </span><span class="s1">trail</span>
+<a name="l290"><span class="ln">290  </span></a>
+<a name="l291"><span class="ln">291  </span></a>    <span class="s2">def </span><span class="s1">is_email_simple(value):</span>
+<a name="l292"><span class="ln">292  </span></a>        <span class="s0">&quot;&quot;&quot;Return True if value looks like an email address.&quot;&quot;&quot;</span>
+<a name="l293"><span class="ln">293  </span></a>        <span class="s3"># An @ must be in the middle of the value.</span>
+<a name="l294"><span class="ln">294  </span></a>        <span class="s2">if </span><span class="s4">'@' </span><span class="s2">not in </span><span class="s1">value </span><span class="s2">or </span><span class="s1">value.startswith(</span><span class="s4">'@'</span><span class="s1">) </span><span class="s2">or </span><span class="s1">value.endswith(</span><span class="s4">'@'</span><span class="s1">):</span>
+<a name="l295"><span class="ln">295  </span></a>            <span class="s2">return False</span>
+<a name="l296"><span class="ln">296  </span></a>        <span class="s2">try</span><span class="s1">:</span>
+<a name="l297"><span class="ln">297  </span></a>            <span class="s1">p1</span><span class="s2">, </span><span class="s1">p2 = value.split(</span><span class="s4">'@'</span><span class="s1">)</span>
+<a name="l298"><span class="ln">298  </span></a>        <span class="s2">except </span><span class="s1">ValueError:</span>
+<a name="l299"><span class="ln">299  </span></a>            <span class="s3"># value contains more than one @.</span>
+<a name="l300"><span class="ln">300  </span></a>            <span class="s2">return False</span>
+<a name="l301"><span class="ln">301  </span></a>        <span class="s3"># Dot must be in p2 (e.g. example.com)</span>
+<a name="l302"><span class="ln">302  </span></a>        <span class="s2">if </span><span class="s4">'.' </span><span class="s2">not in </span><span class="s1">p2 </span><span class="s2">or </span><span class="s1">p2.startswith(</span><span class="s4">'.'</span><span class="s1">):</span>
+<a name="l303"><span class="ln">303  </span></a>            <span class="s2">return False</span>
+<a name="l304"><span class="ln">304  </span></a>        <span class="s2">return True</span>
+<a name="l305"><span class="ln">305  </span></a>
+<a name="l306"><span class="ln">306  </span></a>    <span class="s1">words = word_split_re.split(str(text))</span>
+<a name="l307"><span class="ln">307  </span></a>    <span class="s2">for </span><span class="s1">i</span><span class="s2">, </span><span class="s1">word </span><span class="s2">in </span><span class="s1">enumerate(words):</span>
+<a name="l308"><span class="ln">308  </span></a>        <span class="s2">if </span><span class="s4">'.' </span><span class="s2">in </span><span class="s1">word </span><span class="s2">or </span><span class="s4">'@' </span><span class="s2">in </span><span class="s1">word </span><span class="s2">or </span><span class="s4">':' </span><span class="s2">in </span><span class="s1">word:</span>
+<a name="l309"><span class="ln">309  </span></a>            <span class="s3"># lead: Current punctuation trimmed from the beginning of the word.</span>
+<a name="l310"><span class="ln">310  </span></a>            <span class="s3"># middle: Current state of the word.</span>
+<a name="l311"><span class="ln">311  </span></a>            <span class="s3"># trail: Current punctuation trimmed from the end of the word.</span>
+<a name="l312"><span class="ln">312  </span></a>            <span class="s1">lead</span><span class="s2">, </span><span class="s1">middle</span><span class="s2">, </span><span class="s1">trail = </span><span class="s4">''</span><span class="s2">, </span><span class="s1">word</span><span class="s2">, </span><span class="s4">''</span>
+<a name="l313"><span class="ln">313  </span></a>            <span class="s3"># Deal with punctuation.</span>
+<a name="l314"><span class="ln">314  </span></a>            <span class="s1">lead</span><span class="s2">, </span><span class="s1">middle</span><span class="s2">, </span><span class="s1">trail = trim_punctuation(lead</span><span class="s2">, </span><span class="s1">middle</span><span class="s2">, </span><span class="s1">trail)</span>
+<a name="l315"><span class="ln">315  </span></a>
+<a name="l316"><span class="ln">316  </span></a>            <span class="s3"># Make URL we want to point to.</span>
+<a name="l317"><span class="ln">317  </span></a>            <span class="s1">url = </span><span class="s2">None</span>
+<a name="l318"><span class="ln">318  </span></a>            <span class="s1">nofollow_attr = </span><span class="s4">' rel=&quot;nofollow&quot;' </span><span class="s2">if </span><span class="s1">nofollow </span><span class="s2">else </span><span class="s4">''</span>
+<a name="l319"><span class="ln">319  </span></a>            <span class="s2">if </span><span class="s1">simple_url_re.match(middle):</span>
+<a name="l320"><span class="ln">320  </span></a>                <span class="s1">url = smart_urlquote(html.unescape(middle))</span>
+<a name="l321"><span class="ln">321  </span></a>            <span class="s2">elif </span><span class="s1">simple_url_2_re.match(middle):</span>
+<a name="l322"><span class="ln">322  </span></a>                <span class="s1">url = smart_urlquote(</span><span class="s4">'http://%s' </span><span class="s1">% html.unescape(middle))</span>
+<a name="l323"><span class="ln">323  </span></a>            <span class="s2">elif </span><span class="s4">':' </span><span class="s2">not in </span><span class="s1">middle </span><span class="s2">and </span><span class="s1">is_email_simple(middle):</span>
+<a name="l324"><span class="ln">324  </span></a>                <span class="s1">local</span><span class="s2">, </span><span class="s1">domain = middle.rsplit(</span><span class="s4">'@'</span><span class="s2">, </span><span class="s5">1</span><span class="s1">)</span>
+<a name="l325"><span class="ln">325  </span></a>                <span class="s2">try</span><span class="s1">:</span>
+<a name="l326"><span class="ln">326  </span></a>                    <span class="s1">domain = punycode(domain)</span>
+<a name="l327"><span class="ln">327  </span></a>                <span class="s2">except </span><span class="s1">UnicodeError:</span>
+<a name="l328"><span class="ln">328  </span></a>                    <span class="s2">continue</span>
+<a name="l329"><span class="ln">329  </span></a>                <span class="s1">url = </span><span class="s4">'mailto:%s@%s' </span><span class="s1">% (local</span><span class="s2">, </span><span class="s1">domain)</span>
+<a name="l330"><span class="ln">330  </span></a>                <span class="s1">nofollow_attr = </span><span class="s4">''</span>
+<a name="l331"><span class="ln">331  </span></a>
+<a name="l332"><span class="ln">332  </span></a>            <span class="s3"># Make link.</span>
+<a name="l333"><span class="ln">333  </span></a>            <span class="s2">if </span><span class="s1">url:</span>
+<a name="l334"><span class="ln">334  </span></a>                <span class="s1">trimmed = trim_url(middle)</span>
+<a name="l335"><span class="ln">335  </span></a>                <span class="s2">if </span><span class="s1">autoescape </span><span class="s2">and not </span><span class="s1">safe_input:</span>
+<a name="l336"><span class="ln">336  </span></a>                    <span class="s1">lead</span><span class="s2">, </span><span class="s1">trail = escape(lead)</span><span class="s2">, </span><span class="s1">escape(trail)</span>
+<a name="l337"><span class="ln">337  </span></a>                    <span class="s1">trimmed = escape(trimmed)</span>
+<a name="l338"><span class="ln">338  </span></a>                <span class="s1">middle = </span><span class="s4">'&lt;a href=&quot;%s&quot;%s&gt;%s&lt;/a&gt;' </span><span class="s1">% (escape(url)</span><span class="s2">, </span><span class="s1">nofollow_attr</span><span class="s2">, </span><span class="s1">trimmed)</span>
+<a name="l339"><span class="ln">339  </span></a>                <span class="s1">words[i] = mark_safe(</span><span class="s4">'%s%s%s' </span><span class="s1">% (lead</span><span class="s2">, </span><span class="s1">middle</span><span class="s2">, </span><span class="s1">trail))</span>
+<a name="l340"><span class="ln">340  </span></a>            <span class="s2">else</span><span class="s1">:</span>
+<a name="l341"><span class="ln">341  </span></a>                <span class="s2">if </span><span class="s1">safe_input:</span>
+<a name="l342"><span class="ln">342  </span></a>                    <span class="s1">words[i] = mark_safe(word)</span>
+<a name="l343"><span class="ln">343  </span></a>                <span class="s2">elif </span><span class="s1">autoescape:</span>
+<a name="l344"><span class="ln">344  </span></a>                    <span class="s1">words[i] = escape(word)</span>
+<a name="l345"><span class="ln">345  </span></a>        <span class="s2">elif </span><span class="s1">safe_input:</span>
+<a name="l346"><span class="ln">346  </span></a>            <span class="s1">words[i] = mark_safe(word)</span>
+<a name="l347"><span class="ln">347  </span></a>        <span class="s2">elif </span><span class="s1">autoescape:</span>
+<a name="l348"><span class="ln">348  </span></a>            <span class="s1">words[i] = escape(word)</span>
+<a name="l349"><span class="ln">349  </span></a>    <span class="s2">return </span><span class="s4">''</span><span class="s1">.join(words)</span>
+<a name="l350"><span class="ln">350  </span></a>
+<a name="l351"><span class="ln">351  </span></a>
+<a name="l352"><span class="ln">352  </span></a><span class="s2">def </span><span class="s1">avoid_wrapping(value):</span>
+<a name="l353"><span class="ln">353  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l354"><span class="ln">354  </span></a>    Avoid text wrapping in the middle of a phrase by adding non-breaking 
+<a name="l355"><span class="ln">355  </span></a>    spaces where there previously were normal spaces. 
+<a name="l356"><span class="ln">356  </span></a>    &quot;&quot;&quot;</span>
+<a name="l357"><span class="ln">357  </span></a>    <span class="s2">return </span><span class="s1">value.replace(</span><span class="s4">&quot; &quot;</span><span class="s2">, </span><span class="s4">&quot;</span><span class="s2">\xa0</span><span class="s4">&quot;</span><span class="s1">)</span>
+<a name="l358"><span class="ln">358  </span></a>
+<a name="l359"><span class="ln">359  </span></a>
+<a name="l360"><span class="ln">360  </span></a><span class="s2">def </span><span class="s1">html_safe(klass):</span>
+<a name="l361"><span class="ln">361  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l362"><span class="ln">362  </span></a>    A decorator that defines the __html__ method. This helps non-Django 
+<a name="l363"><span class="ln">363  </span></a>    templates to detect classes whose __str__ methods return SafeString. 
+<a name="l364"><span class="ln">364  </span></a>    &quot;&quot;&quot;</span>
+<a name="l365"><span class="ln">365  </span></a>    <span class="s2">if </span><span class="s4">'__html__' </span><span class="s2">in </span><span class="s1">klass.__dict__:</span>
+<a name="l366"><span class="ln">366  </span></a>        <span class="s2">raise </span><span class="s1">ValueError(</span>
+<a name="l367"><span class="ln">367  </span></a>            <span class="s4">&quot;can't apply @html_safe to %s because it defines &quot;</span>
+<a name="l368"><span class="ln">368  </span></a>            <span class="s4">&quot;__html__().&quot; </span><span class="s1">% klass.__name__</span>
+<a name="l369"><span class="ln">369  </span></a>        <span class="s1">)</span>
+<a name="l370"><span class="ln">370  </span></a>    <span class="s2">if </span><span class="s4">'__str__' </span><span class="s2">not in </span><span class="s1">klass.__dict__:</span>
+<a name="l371"><span class="ln">371  </span></a>        <span class="s2">raise </span><span class="s1">ValueError(</span>
+<a name="l372"><span class="ln">372  </span></a>            <span class="s4">&quot;can't apply @html_safe to %s because it doesn't &quot;</span>
+<a name="l373"><span class="ln">373  </span></a>            <span class="s4">&quot;define __str__().&quot; </span><span class="s1">% klass.__name__</span>
+<a name="l374"><span class="ln">374  </span></a>        <span class="s1">)</span>
+<a name="l375"><span class="ln">375  </span></a>    <span class="s1">klass_str = klass.__str__</span>
+<a name="l376"><span class="ln">376  </span></a>    <span class="s1">klass.__str__ = </span><span class="s2">lambda </span><span class="s1">self: mark_safe(klass_str(self))</span>
+<a name="l377"><span class="ln">377  </span></a>    <span class="s1">klass.__html__ = </span><span class="s2">lambda </span><span class="s1">self: str(self)</span>
+<a name="l378"><span class="ln">378  </span></a>    <span class="s2">return </span><span class="s1">klass</span>
+<a name="l379"><span class="ln">379  </span></a></pre>
+</body>
+</html>

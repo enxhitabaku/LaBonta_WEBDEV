@@ -1,0 +1,137 @@
+/*Navigation Bar*/
+.main-nav{
+
+    margin: auto;
+    /*display: flex;*/
+    /*justify-content: center;*/
+
+    font-variant-caps: all-petite-caps;
+    font-size:large;
+    font-family: 'Montserrat';
+    font-weight: 800;
+
+    padding: 10px;
+    background-color: transparent!important;
+    border-color: transparent!important;
+
+    z-index:1;
+}
+
+.navbar {
+    min-height: 50px;
+    border: 1px solid transparent;
+}
+
+.fontLogo{
+    font-size: xxx-large ;
+    padding-right: 85px;
+}
+
+.navbar-default .navbar-nav li{
+    background-color:transparent!important;
+    padding-right: 30px;
+}
+.fixed-top{
+    position: fixed;
+    z-index: 1030;
+}
+.navbar-default .navbar-nav>li>a {
+    color: #000;
+    padding-right: 0%;
+    z-index:2;
+}
+
+.navbar-default .navbar-nav a:hover {
+    text-decoration: underline;
+}
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.active>a:focus, .navbar-default .navbar-nav>.active>a:hover {
+    color:#000;
+    background: none;
+}
+
+/*Carousel*/
+
+html,
+body {
+  height: 100%;
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+.section {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.section-jobs{
+    /*top:100%;*/
+    width: 100%;
+    height: 100%;
+    background: Yellow;
+    z-index: 0;
+    margin: 0;
+}
+.section-jobs h1 {
+  margin: 0;
+  text-align: center;
+}
+.section-footer{
+    background: gray;
+}
+.fixed-footer{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /*background: gray;*/
+    text-align: center;
+}
+ h1{
+    margin: 0px;
+}
+
+.absolute_fixed-footer h1{
+    position: fixed;
+    top: 0;
+}
+
+.fixed-section {
+    position: fixed;
+    top: 0;
+    transform: translateY(-50%);
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    text-align: center;
+
+}
+.container{
+    width: 100%;
+}
+
+.relative{
+    position: relative;
+    display: block;
+    height: 100%;
+    width:100%;
+}
+
+
+.header-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgb(0, 0, 0);
+  opacity: 0;
+    z-index: 5;
+}
+
+.relative{
+    position: relative;
+}

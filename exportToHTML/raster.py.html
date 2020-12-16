@@ -1,0 +1,131 @@
+<html>
+<head>
+<title>raster.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #629755; font-style: italic;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #808080;}
+.s4 { color: #6a8759;}
+.s5 { color: #6897bb;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+raster.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">&quot;&quot;&quot; 
+<a name="l2"><span class="ln">2    </span></a>This module houses the ctypes function prototypes for GDAL DataSource (raster) 
+<a name="l3"><span class="ln">3    </span></a>related data structures. 
+<a name="l4"><span class="ln">4    </span></a>&quot;&quot;&quot;</span>
+<a name="l5"><span class="ln">5    </span></a><span class="s2">from </span><span class="s1">ctypes </span><span class="s2">import </span><span class="s1">POINTER</span><span class="s2">, </span><span class="s1">c_bool</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_double</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_void_p</span>
+<a name="l6"><span class="ln">6    </span></a><span class="s2">from </span><span class="s1">functools </span><span class="s2">import </span><span class="s1">partial</span>
+<a name="l7"><span class="ln">7    </span></a>
+<a name="l8"><span class="ln">8    </span></a><span class="s2">from </span><span class="s1">django.contrib.gis.gdal.libgdal </span><span class="s2">import </span><span class="s1">GDAL_VERSION</span><span class="s2">, </span><span class="s1">std_call</span>
+<a name="l9"><span class="ln">9    </span></a><span class="s2">from </span><span class="s1">django.contrib.gis.gdal.prototypes.generation </span><span class="s2">import </span><span class="s1">(</span>
+<a name="l10"><span class="ln">10   </span></a>    <span class="s1">chararray_output</span><span class="s2">, </span><span class="s1">const_string_output</span><span class="s2">, </span><span class="s1">double_output</span><span class="s2">, </span><span class="s1">int_output</span><span class="s2">,</span>
+<a name="l11"><span class="ln">11   </span></a>    <span class="s1">void_output</span><span class="s2">, </span><span class="s1">voidptr_output</span><span class="s2">,</span>
+<a name="l12"><span class="ln">12   </span></a><span class="s1">)</span>
+<a name="l13"><span class="ln">13   </span></a>
+<a name="l14"><span class="ln">14   </span></a><span class="s3"># For more detail about c function names and definitions see</span>
+<a name="l15"><span class="ln">15   </span></a><span class="s3"># https://gdal.org/gdal_8h.html</span>
+<a name="l16"><span class="ln">16   </span></a><span class="s3"># https://gdal.org/gdalwarper_8h.html</span>
+<a name="l17"><span class="ln">17   </span></a><span class="s3"># https://www.gdal.org/gdal__utils_8h.html</span>
+<a name="l18"><span class="ln">18   </span></a>
+<a name="l19"><span class="ln">19   </span></a><span class="s3"># Prepare partial functions that use cpl error codes</span>
+<a name="l20"><span class="ln">20   </span></a><span class="s1">void_output = partial(void_output</span><span class="s2">, </span><span class="s1">cpl=</span><span class="s2">True</span><span class="s1">)</span>
+<a name="l21"><span class="ln">21   </span></a><span class="s1">const_string_output = partial(const_string_output</span><span class="s2">, </span><span class="s1">cpl=</span><span class="s2">True</span><span class="s1">)</span>
+<a name="l22"><span class="ln">22   </span></a><span class="s1">double_output = partial(double_output</span><span class="s2">, </span><span class="s1">cpl=</span><span class="s2">True</span><span class="s1">)</span>
+<a name="l23"><span class="ln">23   </span></a>
+<a name="l24"><span class="ln">24   </span></a><span class="s3"># Raster Driver Routines</span>
+<a name="l25"><span class="ln">25   </span></a><span class="s1">register_all = void_output(std_call(</span><span class="s4">'GDALAllRegister'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[]</span><span class="s2">, </span><span class="s1">errcheck=</span><span class="s2">False</span><span class="s1">)</span>
+<a name="l26"><span class="ln">26   </span></a><span class="s1">get_driver = voidptr_output(std_call(</span><span class="s4">'GDALGetDriver'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_int])</span>
+<a name="l27"><span class="ln">27   </span></a><span class="s1">get_driver_by_name = voidptr_output(std_call(</span><span class="s4">'GDALGetDriverByName'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_char_p]</span><span class="s2">, </span><span class="s1">errcheck=</span><span class="s2">False</span><span class="s1">)</span>
+<a name="l28"><span class="ln">28   </span></a><span class="s1">get_driver_count = int_output(std_call(</span><span class="s4">'GDALGetDriverCount'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[])</span>
+<a name="l29"><span class="ln">29   </span></a><span class="s1">get_driver_description = const_string_output(std_call(</span><span class="s4">'GDALGetDescription'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l30"><span class="ln">30   </span></a>
+<a name="l31"><span class="ln">31   </span></a><span class="s3"># Raster Data Source Routines</span>
+<a name="l32"><span class="ln">32   </span></a><span class="s1">create_ds = voidptr_output(std_call(</span><span class="s4">'GDALCreate'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_void_p])</span>
+<a name="l33"><span class="ln">33   </span></a><span class="s1">open_ds = voidptr_output(std_call(</span><span class="s4">'GDALOpen'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_char_p</span><span class="s2">, </span><span class="s1">c_int])</span>
+<a name="l34"><span class="ln">34   </span></a><span class="s1">close_ds = void_output(std_call(</span><span class="s4">'GDALClose'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p]</span><span class="s2">, </span><span class="s1">errcheck=</span><span class="s2">False</span><span class="s1">)</span>
+<a name="l35"><span class="ln">35   </span></a><span class="s1">flush_ds = int_output(std_call(</span><span class="s4">'GDALFlushCache'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l36"><span class="ln">36   </span></a><span class="s1">copy_ds = voidptr_output(</span>
+<a name="l37"><span class="ln">37   </span></a>    <span class="s1">std_call(</span><span class="s4">'GDALCreateCopy'</span><span class="s1">)</span><span class="s2">,</span>
+<a name="l38"><span class="ln">38   </span></a>    <span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">POINTER(c_char_p)</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_void_p]</span>
+<a name="l39"><span class="ln">39   </span></a><span class="s1">)</span>
+<a name="l40"><span class="ln">40   </span></a><span class="s1">add_band_ds = void_output(std_call(</span><span class="s4">'GDALAddBand'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_int])</span>
+<a name="l41"><span class="ln">41   </span></a><span class="s1">get_ds_description = const_string_output(std_call(</span><span class="s4">'GDALGetDescription'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l42"><span class="ln">42   </span></a><span class="s1">get_ds_driver = voidptr_output(std_call(</span><span class="s4">'GDALGetDatasetDriver'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l43"><span class="ln">43   </span></a><span class="s1">get_ds_xsize = int_output(std_call(</span><span class="s4">'GDALGetRasterXSize'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l44"><span class="ln">44   </span></a><span class="s1">get_ds_ysize = int_output(std_call(</span><span class="s4">'GDALGetRasterYSize'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l45"><span class="ln">45   </span></a><span class="s1">get_ds_raster_count = int_output(std_call(</span><span class="s4">'GDALGetRasterCount'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l46"><span class="ln">46   </span></a><span class="s1">get_ds_raster_band = voidptr_output(std_call(</span><span class="s4">'GDALGetRasterBand'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_int])</span>
+<a name="l47"><span class="ln">47   </span></a><span class="s1">get_ds_projection_ref = const_string_output(std_call(</span><span class="s4">'GDALGetProjectionRef'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l48"><span class="ln">48   </span></a><span class="s1">set_ds_projection_ref = void_output(std_call(</span><span class="s4">'GDALSetProjection'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_char_p])</span>
+<a name="l49"><span class="ln">49   </span></a><span class="s1">get_ds_geotransform = void_output(std_call(</span><span class="s4">'GDALGetGeoTransform'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">POINTER(c_double * </span><span class="s5">6</span><span class="s1">)]</span><span class="s2">, </span><span class="s1">errcheck=</span><span class="s2">False</span><span class="s1">)</span>
+<a name="l50"><span class="ln">50   </span></a><span class="s1">set_ds_geotransform = void_output(std_call(</span><span class="s4">'GDALSetGeoTransform'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">POINTER(c_double * </span><span class="s5">6</span><span class="s1">)])</span>
+<a name="l51"><span class="ln">51   </span></a>
+<a name="l52"><span class="ln">52   </span></a><span class="s1">get_ds_metadata = chararray_output(std_call(</span><span class="s4">'GDALGetMetadata'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_char_p]</span><span class="s2">, </span><span class="s1">errcheck=</span><span class="s2">False</span><span class="s1">)</span>
+<a name="l53"><span class="ln">53   </span></a><span class="s1">set_ds_metadata = void_output(std_call(</span><span class="s4">'GDALSetMetadata'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">POINTER(c_char_p)</span><span class="s2">, </span><span class="s1">c_char_p])</span>
+<a name="l54"><span class="ln">54   </span></a><span class="s1">get_ds_metadata_domain_list = chararray_output(std_call(</span><span class="s4">'GDALGetMetadataDomainList'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p]</span><span class="s2">, </span><span class="s1">errcheck=</span><span class="s2">False</span><span class="s1">)</span>
+<a name="l55"><span class="ln">55   </span></a><span class="s1">get_ds_metadata_item = const_string_output(std_call(</span><span class="s4">'GDALGetMetadataItem'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_char_p])</span>
+<a name="l56"><span class="ln">56   </span></a><span class="s1">set_ds_metadata_item = const_string_output(std_call(</span><span class="s4">'GDALSetMetadataItem'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_char_p])</span>
+<a name="l57"><span class="ln">57   </span></a><span class="s1">free_dsl = void_output(std_call(</span><span class="s4">'CSLDestroy'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[POINTER(c_char_p)]</span><span class="s2">, </span><span class="s1">errcheck=</span><span class="s2">False</span><span class="s1">)</span>
+<a name="l58"><span class="ln">58   </span></a>
+<a name="l59"><span class="ln">59   </span></a><span class="s2">if </span><span class="s1">GDAL_VERSION &gt;= (</span><span class="s5">2</span><span class="s2">, </span><span class="s5">1</span><span class="s1">):</span>
+<a name="l60"><span class="ln">60   </span></a>    <span class="s1">get_ds_info = const_string_output(std_call(</span><span class="s4">'GDALInfo'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_void_p])</span>
+<a name="l61"><span class="ln">61   </span></a><span class="s2">else</span><span class="s1">:</span>
+<a name="l62"><span class="ln">62   </span></a>    <span class="s1">get_ds_info = </span><span class="s2">None</span>
+<a name="l63"><span class="ln">63   </span></a>
+<a name="l64"><span class="ln">64   </span></a><span class="s3"># Raster Band Routines</span>
+<a name="l65"><span class="ln">65   </span></a><span class="s1">band_io = void_output(</span>
+<a name="l66"><span class="ln">66   </span></a>    <span class="s1">std_call(</span><span class="s4">'GDALRasterIO'</span><span class="s1">)</span><span class="s2">,</span>
+<a name="l67"><span class="ln">67   </span></a>    <span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int]</span>
+<a name="l68"><span class="ln">68   </span></a><span class="s1">)</span>
+<a name="l69"><span class="ln">69   </span></a><span class="s1">get_band_xsize = int_output(std_call(</span><span class="s4">'GDALGetRasterBandXSize'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l70"><span class="ln">70   </span></a><span class="s1">get_band_ysize = int_output(std_call(</span><span class="s4">'GDALGetRasterBandYSize'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l71"><span class="ln">71   </span></a><span class="s1">get_band_index = int_output(std_call(</span><span class="s4">'GDALGetBandNumber'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l72"><span class="ln">72   </span></a><span class="s1">get_band_description = const_string_output(std_call(</span><span class="s4">'GDALGetDescription'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l73"><span class="ln">73   </span></a><span class="s1">get_band_ds = voidptr_output(std_call(</span><span class="s4">'GDALGetBandDataset'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l74"><span class="ln">74   </span></a><span class="s1">get_band_datatype = int_output(std_call(</span><span class="s4">'GDALGetRasterDataType'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l75"><span class="ln">75   </span></a><span class="s1">get_band_color_interp = int_output(std_call(</span><span class="s4">'GDALGetRasterColorInterpretation'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l76"><span class="ln">76   </span></a><span class="s1">get_band_nodata_value = double_output(std_call(</span><span class="s4">'GDALGetRasterNoDataValue'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">POINTER(c_int)])</span>
+<a name="l77"><span class="ln">77   </span></a><span class="s1">set_band_nodata_value = void_output(std_call(</span><span class="s4">'GDALSetRasterNoDataValue'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_double])</span>
+<a name="l78"><span class="ln">78   </span></a><span class="s2">if </span><span class="s1">GDAL_VERSION &gt;= (</span><span class="s5">2</span><span class="s2">, </span><span class="s5">1</span><span class="s1">):</span>
+<a name="l79"><span class="ln">79   </span></a>    <span class="s1">delete_band_nodata_value = void_output(std_call(</span><span class="s4">'GDALDeleteRasterNoDataValue'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_void_p])</span>
+<a name="l80"><span class="ln">80   </span></a><span class="s2">else</span><span class="s1">:</span>
+<a name="l81"><span class="ln">81   </span></a>    <span class="s1">delete_band_nodata_value = </span><span class="s2">None</span>
+<a name="l82"><span class="ln">82   </span></a><span class="s1">get_band_statistics = void_output(</span>
+<a name="l83"><span class="ln">83   </span></a>    <span class="s1">std_call(</span><span class="s4">'GDALGetRasterStatistics'</span><span class="s1">)</span><span class="s2">,</span>
+<a name="l84"><span class="ln">84   </span></a>    <span class="s1">[</span>
+<a name="l85"><span class="ln">85   </span></a>        <span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">POINTER(c_double)</span><span class="s2">, </span><span class="s1">POINTER(c_double)</span><span class="s2">,</span>
+<a name="l86"><span class="ln">86   </span></a>        <span class="s1">POINTER(c_double)</span><span class="s2">, </span><span class="s1">POINTER(c_double)</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">,</span>
+<a name="l87"><span class="ln">87   </span></a>    <span class="s1">]</span><span class="s2">,</span>
+<a name="l88"><span class="ln">88   </span></a><span class="s1">)</span>
+<a name="l89"><span class="ln">89   </span></a><span class="s1">compute_band_statistics = void_output(</span>
+<a name="l90"><span class="ln">90   </span></a>    <span class="s1">std_call(</span><span class="s4">'GDALComputeRasterStatistics'</span><span class="s1">)</span><span class="s2">,</span>
+<a name="l91"><span class="ln">91   </span></a>    <span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">POINTER(c_double)</span><span class="s2">, </span><span class="s1">POINTER(c_double)</span><span class="s2">, </span><span class="s1">POINTER(c_double)</span><span class="s2">, </span><span class="s1">POINTER(c_double)</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_void_p]</span><span class="s2">,</span>
+<a name="l92"><span class="ln">92   </span></a><span class="s1">)</span>
+<a name="l93"><span class="ln">93   </span></a>
+<a name="l94"><span class="ln">94   </span></a><span class="s3"># Reprojection routine</span>
+<a name="l95"><span class="ln">95   </span></a><span class="s1">reproject_image = void_output(</span>
+<a name="l96"><span class="ln">96   </span></a>    <span class="s1">std_call(</span><span class="s4">'GDALReprojectImage'</span><span class="s1">)</span><span class="s2">,</span>
+<a name="l97"><span class="ln">97   </span></a>    <span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_double</span><span class="s2">, </span><span class="s1">c_double</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_void_p]</span>
+<a name="l98"><span class="ln">98   </span></a><span class="s1">)</span>
+<a name="l99"><span class="ln">99   </span></a><span class="s1">auto_create_warped_vrt = voidptr_output(</span>
+<a name="l100"><span class="ln">100  </span></a>    <span class="s1">std_call(</span><span class="s4">'GDALAutoCreateWarpedVRT'</span><span class="s1">)</span><span class="s2">,</span>
+<a name="l101"><span class="ln">101  </span></a>    <span class="s1">[c_void_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_char_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_double</span><span class="s2">, </span><span class="s1">c_void_p]</span>
+<a name="l102"><span class="ln">102  </span></a><span class="s1">)</span>
+<a name="l103"><span class="ln">103  </span></a>
+<a name="l104"><span class="ln">104  </span></a><span class="s3"># Create VSI gdal raster files from in-memory buffers.</span>
+<a name="l105"><span class="ln">105  </span></a><span class="s3"># https://gdal.org/cpl__vsi_8h.html</span>
+<a name="l106"><span class="ln">106  </span></a><span class="s1">create_vsi_file_from_mem_buffer = voidptr_output(std_call(</span><span class="s4">'VSIFileFromMemBuffer'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_char_p</span><span class="s2">, </span><span class="s1">c_void_p</span><span class="s2">, </span><span class="s1">c_int</span><span class="s2">, </span><span class="s1">c_int])</span>
+<a name="l107"><span class="ln">107  </span></a><span class="s1">get_mem_buffer_from_vsi_file = voidptr_output(std_call(</span><span class="s4">'VSIGetMemFileBuffer'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_char_p</span><span class="s2">, </span><span class="s1">POINTER(c_int)</span><span class="s2">, </span><span class="s1">c_bool])</span>
+<a name="l108"><span class="ln">108  </span></a><span class="s1">unlink_vsi_file = int_output(std_call(</span><span class="s4">'VSIUnlink'</span><span class="s1">)</span><span class="s2">, </span><span class="s1">[c_char_p])</span>
+<a name="l109"><span class="ln">109  </span></a></pre>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<html>
+<head>
+<title>change_list.html</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #a9b7c6;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #e8bf6a;}
+.s3 { color: #bababa;}
+.s4 { color: #a5c261;}
+.s5 { color: #6d9cbe;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+change_list.html</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">{% extends &quot;admin/base_site.html&quot; %}</span>
+<a name="l2"><span class="ln">2    </span></a><span class="s0">{% load i18n admin_urls static admin_list %}</span>
+<a name="l3"><span class="ln">3    </span></a>
+<a name="l4"><span class="ln">4    </span></a><span class="s0">{% block extrastyle %}</span>
+<a name="l5"><span class="ln">5    </span></a>  <span class="s0">{{ block.super }}</span>
+<a name="l6"><span class="ln">6    </span></a>  <span class="s2">&lt;link </span><span class="s3">rel</span><span class="s4">=&quot;stylesheet&quot; </span><span class="s3">type</span><span class="s4">=&quot;text/css&quot; </span><span class="s3">href</span><span class="s4">=&quot;{% static &quot;</span><span class="s3">admin</span><span class="s0">/css/changelists.css&quot; %}&quot;&gt;</span>
+<a name="l7"><span class="ln">7    </span></a>  <span class="s0">{% if cl.formset %}</span>
+<a name="l8"><span class="ln">8    </span></a>    <span class="s2">&lt;link </span><span class="s3">rel</span><span class="s4">=&quot;stylesheet&quot; </span><span class="s3">type</span><span class="s4">=&quot;text/css&quot; </span><span class="s3">href</span><span class="s4">=&quot;{% static &quot;</span><span class="s3">admin</span><span class="s0">/css/forms.css&quot; %}&quot;&gt;</span>
+<a name="l9"><span class="ln">9    </span></a>  <span class="s0">{% endif %}</span>
+<a name="l10"><span class="ln">10   </span></a>  <span class="s0">{% if cl.formset or action_form %}</span>
+<a name="l11"><span class="ln">11   </span></a>    <span class="s2">&lt;script </span><span class="s3">src</span><span class="s4">=&quot;{% url 'admin:jsi18n' %}&quot;</span><span class="s2">&gt;&lt;/script&gt;</span>
+<a name="l12"><span class="ln">12   </span></a>  <span class="s0">{% endif %}</span>
+<a name="l13"><span class="ln">13   </span></a>  <span class="s0">{{ media.css }}</span>
+<a name="l14"><span class="ln">14   </span></a>  <span class="s0">{% if not actions_on_top and not actions_on_bottom %}</span>
+<a name="l15"><span class="ln">15   </span></a>    <span class="s2">&lt;style&gt;</span>
+<a name="l16"><span class="ln">16   </span></a>      <span class="s2">#changelist table thead th</span><span class="s0">:</span><span class="s2">first-child </span><span class="s0">{</span><span class="s3">width</span><span class="s0">: </span><span class="s4">inherit</span><span class="s0">}</span>
+<a name="l17"><span class="ln">17   </span></a>    <span class="s2">&lt;/style&gt;</span>
+<a name="l18"><span class="ln">18   </span></a>  <span class="s0">{% endif %}</span>
+<a name="l19"><span class="ln">19   </span></a><span class="s0">{% endblock %}</span>
+<a name="l20"><span class="ln">20   </span></a>
+<a name="l21"><span class="ln">21   </span></a><span class="s0">{% block extrahead %}</span>
+<a name="l22"><span class="ln">22   </span></a><span class="s0">{{ block.super }}</span>
+<a name="l23"><span class="ln">23   </span></a><span class="s0">{{ media.js }}</span>
+<a name="l24"><span class="ln">24   </span></a><span class="s0">{% endblock %}</span>
+<a name="l25"><span class="ln">25   </span></a>
+<a name="l26"><span class="ln">26   </span></a><span class="s0">{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}</span>
+<a name="l27"><span class="ln">27   </span></a>
+<a name="l28"><span class="ln">28   </span></a><span class="s0">{% if not is_popup %}</span>
+<a name="l29"><span class="ln">29   </span></a><span class="s0">{% block breadcrumbs %}</span>
+<a name="l30"><span class="ln">30   </span></a><span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;breadcrumbs&quot;</span><span class="s2">&gt;</span>
+<a name="l31"><span class="ln">31   </span></a><span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url 'admin:index' %}&quot;</span><span class="s2">&gt;</span><span class="s0">{% translate 'Home' %}</span><span class="s2">&lt;/a&gt;</span>
+<a name="l32"><span class="ln">32   </span></a><span class="s5">&amp;rsaquo; </span><span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{% url 'admin:app_list' app_label=cl.opts.app_label %}&quot;</span><span class="s2">&gt;</span><span class="s0">{{ cl.opts.app_config.verbose_name }}</span><span class="s2">&lt;/a&gt;</span>
+<a name="l33"><span class="ln">33   </span></a><span class="s5">&amp;rsaquo; </span><span class="s0">{{ cl.opts.verbose_name_plural|capfirst }}</span>
+<a name="l34"><span class="ln">34   </span></a><span class="s2">&lt;/div&gt;</span>
+<a name="l35"><span class="ln">35   </span></a><span class="s0">{% endblock %}</span>
+<a name="l36"><span class="ln">36   </span></a><span class="s0">{% endif %}</span>
+<a name="l37"><span class="ln">37   </span></a>
+<a name="l38"><span class="ln">38   </span></a><span class="s0">{% block coltype %}flex{% endblock %}</span>
+<a name="l39"><span class="ln">39   </span></a>
+<a name="l40"><span class="ln">40   </span></a><span class="s0">{% block content %}</span>
+<a name="l41"><span class="ln">41   </span></a>  <span class="s2">&lt;div </span><span class="s3">id</span><span class="s4">=&quot;content-main&quot;</span><span class="s2">&gt;</span>
+<a name="l42"><span class="ln">42   </span></a>    <span class="s0">{% block object-tools %}</span>
+<a name="l43"><span class="ln">43   </span></a>        <span class="s2">&lt;ul </span><span class="s3">class</span><span class="s4">=&quot;object-tools&quot;</span><span class="s2">&gt;</span>
+<a name="l44"><span class="ln">44   </span></a>          <span class="s0">{% block object-tools-items %}</span>
+<a name="l45"><span class="ln">45   </span></a>            <span class="s0">{% change_list_object_tools %}</span>
+<a name="l46"><span class="ln">46   </span></a>          <span class="s0">{% endblock %}</span>
+<a name="l47"><span class="ln">47   </span></a>        <span class="s2">&lt;/ul&gt;</span>
+<a name="l48"><span class="ln">48   </span></a>    <span class="s0">{% endblock %}</span>
+<a name="l49"><span class="ln">49   </span></a>    <span class="s0">{% if cl.formset and cl.formset.errors %}</span>
+<a name="l50"><span class="ln">50   </span></a>        <span class="s2">&lt;p </span><span class="s3">class</span><span class="s4">=&quot;errornote&quot;</span><span class="s2">&gt;</span>
+<a name="l51"><span class="ln">51   </span></a>        <span class="s0">{% if cl.formset.total_error_count == 1 %}{% translate &quot;Please correct the error below.&quot; %}{% else %}{% translate &quot;Please correct the errors below.&quot; %}{% endif %}</span>
+<a name="l52"><span class="ln">52   </span></a>        <span class="s2">&lt;/p&gt;</span>
+<a name="l53"><span class="ln">53   </span></a>        <span class="s0">{{ cl.formset.non_form_errors }}</span>
+<a name="l54"><span class="ln">54   </span></a>    <span class="s0">{% endif %}</span>
+<a name="l55"><span class="ln">55   </span></a>    <span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;module{% if cl.has_filters %} filtered{% endif %}&quot; </span><span class="s3">id</span><span class="s4">=&quot;changelist&quot;</span><span class="s2">&gt;</span>
+<a name="l56"><span class="ln">56   </span></a>      <span class="s2">&lt;div </span><span class="s3">class</span><span class="s4">=&quot;changelist-form-container&quot;</span><span class="s2">&gt;</span>
+<a name="l57"><span class="ln">57   </span></a>        <span class="s0">{% block search %}{% search_form cl %}{% endblock %}</span>
+<a name="l58"><span class="ln">58   </span></a>        <span class="s0">{% block date_hierarchy %}{% if cl.date_hierarchy %}{% date_hierarchy cl %}{% endif %}{% endblock %}</span>
+<a name="l59"><span class="ln">59   </span></a>
+<a name="l60"><span class="ln">60   </span></a>        <span class="s2">&lt;form </span><span class="s3">id</span><span class="s4">=&quot;changelist-form&quot; </span><span class="s3">method</span><span class="s4">=&quot;post&quot;</span><span class="s3">{% if cl.formset and cl.formset.is_multipart %} enctype</span><span class="s4">=&quot;multipart/form-data&quot;</span><span class="s3">{% endif %} novalidate</span><span class="s2">&gt;</span><span class="s0">{% csrf_token %}</span>
+<a name="l61"><span class="ln">61   </span></a>        <span class="s0">{% if cl.formset %}</span>
+<a name="l62"><span class="ln">62   </span></a>          <span class="s2">&lt;div&gt;</span><span class="s0">{{ cl.formset.management_form }}</span><span class="s2">&lt;/div&gt;</span>
+<a name="l63"><span class="ln">63   </span></a>        <span class="s0">{% endif %}</span>
+<a name="l64"><span class="ln">64   </span></a>
+<a name="l65"><span class="ln">65   </span></a>        <span class="s0">{% block result_list %}</span>
+<a name="l66"><span class="ln">66   </span></a>          <span class="s0">{% if action_form and actions_on_top and cl.show_admin_actions %}{% admin_actions %}{% endif %}</span>
+<a name="l67"><span class="ln">67   </span></a>          <span class="s0">{% result_list cl %}</span>
+<a name="l68"><span class="ln">68   </span></a>          <span class="s0">{% if action_form and actions_on_bottom and cl.show_admin_actions %}{% admin_actions %}{% endif %}</span>
+<a name="l69"><span class="ln">69   </span></a>        <span class="s0">{% endblock %}</span>
+<a name="l70"><span class="ln">70   </span></a>        <span class="s0">{% block pagination %}{% pagination cl %}{% endblock %}</span>
+<a name="l71"><span class="ln">71   </span></a>        <span class="s2">&lt;/form&gt;</span>
+<a name="l72"><span class="ln">72   </span></a>      <span class="s2">&lt;/div&gt;</span>
+<a name="l73"><span class="ln">73   </span></a>      <span class="s0">{% block filters %}</span>
+<a name="l74"><span class="ln">74   </span></a>        <span class="s0">{% if cl.has_filters %}</span>
+<a name="l75"><span class="ln">75   </span></a>          <span class="s2">&lt;div </span><span class="s3">id</span><span class="s4">=&quot;changelist-filter&quot;</span><span class="s2">&gt;</span>
+<a name="l76"><span class="ln">76   </span></a>            <span class="s2">&lt;h2&gt;</span><span class="s0">{% translate 'Filter' %}</span><span class="s2">&lt;/h2&gt;</span>
+<a name="l77"><span class="ln">77   </span></a>            <span class="s0">{% if cl.has_active_filters %}</span><span class="s2">&lt;h3 </span><span class="s3">id</span><span class="s4">=&quot;changelist-filter-clear&quot;</span><span class="s2">&gt;</span>
+<a name="l78"><span class="ln">78   </span></a>              <span class="s2">&lt;a </span><span class="s3">href</span><span class="s4">=&quot;{{ cl.clear_all_filters_qs }}&quot;</span><span class="s2">&gt;</span><span class="s5">&amp;#10006; </span><span class="s0">{% translate &quot;Clear all filters&quot; %}</span><span class="s2">&lt;/a&gt;</span>
+<a name="l79"><span class="ln">79   </span></a>            <span class="s2">&lt;/h3&gt;</span><span class="s0">{% endif %}</span>
+<a name="l80"><span class="ln">80   </span></a>            <span class="s0">{% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}</span>
+<a name="l81"><span class="ln">81   </span></a>          <span class="s2">&lt;/div&gt;</span>
+<a name="l82"><span class="ln">82   </span></a>        <span class="s0">{% endif %}</span>
+<a name="l83"><span class="ln">83   </span></a>      <span class="s0">{% endblock %}</span>
+<a name="l84"><span class="ln">84   </span></a>    <span class="s2">&lt;/div&gt;</span>
+<a name="l85"><span class="ln">85   </span></a>  <span class="s2">&lt;/div&gt;</span>
+<a name="l86"><span class="ln">86   </span></a><span class="s0">{% endblock %}</span>
+<a name="l87"><span class="ln">87   </span></a></pre>
+</body>
+</html>

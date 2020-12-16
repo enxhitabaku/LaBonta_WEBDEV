@@ -1,0 +1,676 @@
+header,body,footer{
+    background-color:#D3D2A2;
+}
+html {
+    scroll-behavior: smooth;
+  }
+p{
+    font-family: 'Montserrat';
+}
+h1,h2{
+    font-family: 'Patua One';
+}
+a, a:link, a:visited, a:hover, a:active{
+    text-decoration: none;
+    color:gray;
+}
+.myButton{
+    border-top-style: hidden;
+    border-right-style: hidden;
+    border-left-style: hidden;
+    border-bottom-style: groove;
+    background-color: transparent;
+}
+
+/*Field focus*/
+*:focus {
+    outline: none;
+}
+/*Click button efect*/
+.clickIt:active {
+    background-color: transparent;
+    box-shadow: 0 5px #666;
+    transform: translateY(4px);
+}
+
+/*Sticky Floating Button*/
+.label-container{
+	position:fixed;
+	bottom:48px;
+	right:105px;
+	display:table;
+    visibility: hidden;
+}
+.label-text{
+	color:#FFF;
+	background:rgba(51,51,51,0.5);
+	display:table-cell;
+	vertical-align:middle;
+	padding:10px;
+	border-radius:3px;
+}
+.label-arrow{
+	display:table-cell;
+	vertical-align:middle;
+	color:#333;
+	opacity:0.5;
+}
+
+.float{
+	position:fixed;
+	width:60px;
+	height:60px;
+	bottom:40px;
+	right:40px;
+	background-color:rgb(40, 178, 10);
+	color:#FFF;
+	border-radius:50px;
+	text-align:center;
+    box-shadow: 2px 2px 3px #999;
+    z-index: 100;
+}
+.my-float{
+	font-size:24px;
+    margin-top:18px;
+}
+a.float + div.label-container {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s, opacity 0.5s ease;
+  z-index: 100;
+}
+a.float:hover + div.label-container{
+  visibility: visible;
+  opacity: 1;
+
+}
+
+
+/*Navigation Bar*/
+.main-nav{
+
+    margin: auto;
+    display: flex;
+    justify-content: center;
+
+    font-variant-caps: all-petite-caps;
+    font-size:large;
+    font-family: 'Montserrat';
+    font-weight: 800;
+
+    padding: 10px;
+    background-color: hsla(0,0%,100%,.97)!important;
+    border-color: transparent!important;
+
+    z-index:1;
+}
+
+
+.navbar {
+    min-height: 50px;
+    border: 1px solid transparent;
+}
+
+.navbar-default .navbar-nav li{
+    background-color:hsla(0,0%,100%,.97)!important;
+    padding-right: 30px;
+}
+.fixed-top{
+    position: fixed;
+    z-index: 1030;
+}
+.navbar-default .navbar-nav>li>a {
+    color: #000;
+    padding-right: 0%;
+    z-index:2;
+}
+
+.navbar-default .navbar-nav a:hover {
+    text-decoration: underline;
+}
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.active>a:focus, .navbar-default .navbar-nav>.active>a:hover {
+    color:#000;
+    background: none;
+}
+
+/*Section*/
+.section{
+    margin-bottom: 4%;
+}
+.section h1{
+    font-family: 'Patua One';
+    font-size: 3.4em;
+    text-align: left;
+    padding-top: 15%;
+    margin-bottom: 5%;
+    color: #000;
+}
+.section p{
+    font-family: 'Montserrat';
+    font-size: 1.5em;
+}
+
+
+/*HOME Carousel CSS*/
+#homeContainer{
+    margin-top: 7%;
+}
+.myCarouselContainer img{
+    width: 100%;
+}
+#homePanel{
+    background-color: transparent !important;
+    border-style: none;
+}
+#homeGrid{
+    
+    box-shadow: 10px 10px 5px #c3b17f, -10px -10px 10px #c3b17f;
+}
+
+/*About*/
+
+#aboutYear{
+    font-family: 'Cormorant Garamond';
+    font-size: 13em;
+    margin:0%;
+    padding:0%;
+    padding-left:12%;
+    display: flex;
+    justify-content: center;
+}
+#aboutContainer{
+    overflow-x: hidden;
+    margin-top:0%;
+}
+
+#aboutContainer img{
+    height: 100%;
+    width: 85%;
+    box-shadow: 80px -30px 10px #c6c087;
+}
+#aboutPanel{
+    background-color: transparent !important;
+    border-style: none;
+}
+
+
+#aboutLaBontaHeader, #aboutLaBontaPar{
+    margin: 0% 0% 0% 20%;
+    padding: 0% 0% 0% 0%;
+}
+#aboutLaBontaHeader{
+    margin-bottom: 5%;
+}
+#aboutLaBontaHeader h1{
+    text-align: center;
+    margin: 0%;
+    font-size: 4em;
+}
+#aboutLaBontaPar p{
+    font-size: 1.5em;
+}
+
+  /*Menu Section*/
+#menu{
+    background-image: url("Wine.jpg");
+    background-size: cover;
+    border: none;
+    background-attachment: fixed;
+    padding-top:5%;
+}
+#menuContainer{
+    margin-right:0%;
+    background-color:white;
+    width: 75%;
+}
+#downloadLinkMenu{
+    margin-top: 5%;
+    margin-right: 37%;   
+}
+
+#menuPanel{
+    margin:3% 3% 3% 3% ;
+}
+#panelHeaderMenu, #panelParMenu{
+    margin: 0%;
+}
+#panelHeaderMenu{
+    margin-left: 1%;
+    width: 100%;
+}
+
+#panelParMenu{
+    display: flex;
+    flex-flow: row;
+    padding-top:0px;
+}
+
+#panelParMenu li{
+    font-size: 1.8em;
+    font-weight: bolder;
+    color: #ba8a6e;
+    font-family: 'Gabriela';
+    list-style: none;
+    width: 100%;
+}
+
+#panelParMenu a{
+    color: gray;
+    text-decoration: underline;
+    cursor: pointer;
+}
+#panelHeaderMenu h1{
+    font-size: 2.5em;
+}
+
+#leftAboutCtrl {
+    background-color:  hsla(0,0%,100%,.99)!important;
+}
+
+#aboutCarouselIndicators li{
+    visibility: hidden;
+}
+
+#menuCarousel{
+    margin-top: 30%;
+    width: 120%;
+    height: 120%;
+}
+
+
+/*Booking Section*/
+#booking {
+    background-image: linear-gradient(rgba(2,16,63,.65),rgba(2,16,63,.65)),url("BackgroundImage.jpg");
+    background-size: cover;
+    border: none;
+    background-attachment: fixed;
+    padding: 100px 0;
+}
+
+.Booking{
+    display: flex;
+    flex-flow: row;
+    justify-content: center;
+    letter-spacing: 50px;//%
+    width:545px;
+    height: 146px;
+}
+.Booking .panel-header .panel-body {
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+}
+.Booking .panel-header h1{
+    color: white;
+    font-family: 'Gabriela';
+    font-weight: bold;
+    font-size: 2.8em;
+    font-variant-caps: all-petite-caps;
+    margin-top: 5%;
+}
+.Booking .panel-header i{
+    color: white;
+}
+.Booking .panel-header p{
+    color: white; 
+}
+
+.boxedHover{
+    background-color: hsla(0,0%,100%,.0);
+    cursor: pointer;
+    border: none;
+    padding: 5%;
+}
+
+.boxedHover:hover{
+    background-color: hsla(0,0%,100%,.1);
+    cursor: pointer;
+}
+
+/*PopUP*/
+.modal-content  {
+    -webkit-border-radius: 16px!important;
+    -moz-border-radius: 16px!important;
+    border-radius: 16px !important; 
+}
+.modal-content button{
+    background-color:transparent!important;
+    border-style: none!important;;
+}
+
+#formId{
+    vertical-align: middle;
+}
+.modal-footer{
+    text-align:center;
+}
+#myModal .modal-content h1{
+    color:#a1b2b6;
+}
+
+
+#myOrderModal .modal-header{
+    background-color:#efd469;
+    border-radius: 16px 16px 0px 0px!important;
+}
+
+#myOrderModal .container{
+    position: relative;
+    width: 100%;
+    text-align: center;
+}
+
+#myOrderModal h2{
+    color:#807e2a;
+    text-align: center;
+}
+#myOrderModal .modal-content h1{
+    color: #c02f1d;
+}
+
+#myOrderModal {
+    font-size: 1.3em;
+    font-variant-caps: petite-caps;
+}
+#myOrderModal .row{
+    text-align: center;
+    margin-bottom:1%;
+}
+#myOrderModal li{
+   display: inline;
+   list-style: none;
+}
+#myOrderModal ul{
+    padding: 0;
+}
+#myOrderModal input{
+    width: 100%;
+    text-align: center;
+}
+
+.quantity{
+    border:none;
+}
+
+
+/*Remove Spiner */
+#inputPhoneNo,.quantity::-webkit-inner-spin-button, 
+#inputPhoneNo,.quantity::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+/*Serving Time*/
+#servingContainer{
+    background-color: white ;
+}
+#servingTime{
+    padding-top:3%;
+    padding-bottom: 7%;
+    width: 100%;
+}
+#servingTime div{
+    letter-spacing: 50px;//%
+    text-align:center;
+    font-variant-caps: all-petite-caps;
+    font-weight: 700;
+    font-size: 1.3em;
+    font-family: 'Gabriela';
+}
+
+/*Contact*/
+#newsletterEmail{
+    color:whitesmoke;
+}
+
+#contactContainer{
+    background-image: linear-gradient(rgba(2,16,63,.65),rgba(2,16,63,.65)),url("Lokal.jpg");
+    background-size: cover;
+    border: none;
+    background-attachment: fixed;
+    padding: 100px 0;
+    width: 95%;
+    height: 500px;
+    margin-top:3%;
+    margin-bottom:5%;
+}
+#contactGrid{
+    text-align: center;
+}
+#contactGrid a{
+    padding-right: 5%;
+    cursor: pointer;
+}
+#contactGrid p,h1{
+    color:antiquewhite;
+}
+#newsletterEmail{
+    border-top-style: hidden;
+    border-right-style: hidden;
+    border-left-style: hidden;
+    border-bottom-style: groove;
+    background-color: transparent;
+}
+
+.alertContainer{
+    visibility: hidden;
+    position: relative;
+}
+#newsletterEmailSuccesAlert{
+    position: absolute;
+}
+
+/* Footer */
+footer h2{
+    text-align: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.5em;
+    font-family: 'Gabriela';
+    margin:3%;
+}
+#footerContainer{
+    margin-bottom:5%;
+}
+
+
+/* Extra small devices (phones, 600px and down) */
+@media only screen and (max-width: 600px) {
+    .container-fluid {
+        padding-right: 1%;
+        margin-right: 0%;
+    }
+
+    #home h1{
+        font-size:2.7em;
+    }
+    #home p{
+        font-size:1.2em;
+    }
+    #menuContainer h1{
+        font-size:1.7em;
+    }
+    #menuCarousel{
+        width: 100%;
+        height: 100%;
+    }
+    #booking{
+        padding-top:3%;
+    }
+    #bookingContainer{
+        padding-top:10%;
+    }
+
+    #orderNowButton{
+        margin-top:10%;
+    }
+    
+    #contactContainer{
+        padding-top:10%;
+    }
+    #contactGrid a{
+        margin-bottom:5%;
+    }
+    .row{
+        margin-right:0px;
+
+    }
+    .Booking{
+        width:100%
+    }
+
+}
+
+/* Small devices (portrait tablets and large phones, 600px and up) */
+@media only screen and (min-width: 600px ) and (max-width:768px){
+    .container-fluid {
+        padding-right: 1%;
+        margin-right: 0%;
+    }
+    #menuCarousel{
+        width: 100%;
+        height: 100%;
+    }
+    .Booking{
+        width:100%
+    }
+    #orderNowButton{
+        margin-top:15%;
+    }
+    #booking{
+        padding-top:3%;
+    }
+    #contactContainer{
+        padding-top:5%;
+    }
+    #contactGrid a{
+        margin-bottom:5%;
+    }
+    #homeGrid{
+        width: 100%;
+    }
+
+
+}
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) and (max-width:992px) {
+
+    #menuCarousel{
+        width: 100%;
+        height: 100%;
+    }
+
+    #contactGrid div{
+        width:100%!important;
+    }
+    #contactContainer{
+        padding-top:5%;
+    }
+    #contactGrid a{
+        margin-bottom:5%;
+    }
+    .Booking{
+        width:100%
+    }
+    #orderNowButton{
+        margin-top:15%;
+    }
+    #booking{
+        padding-top:3%;
+    }
+
+    #homeGrid{
+        width: 100%;
+    }
+    #homeGrid div{
+        width: 100%;
+    }
+
+    #homeGrid p{
+        width:75%;
+    }
+    footer h2{
+        font-size: 1.3em;
+    }
+    #leftAboutCtrl{
+        display: none;
+    }
+    #aboutCarouselIndicators li{
+        visibility: visible;
+    }
+
+} 
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px)and (max-width:1200px) {
+    
+    .Booking{
+        width:100%
+    }
+    #orderNowButton{
+        margin-top:15%;
+    }
+    #booking{
+        padding-top:3%;
+    }
+    #panelHeaderMenu {
+        margin-left: 1%;
+        width: 175%;
+    }
+    div#myCarouselMenu {
+        margin-top: 100%;
+    }
+
+    #homeGrid {
+        width: 100%;
+        margin-left: 1%;
+    }
+    div#myCarousel {
+    margin:5%;
+    margin-top:10%;
+    }
+    #homeGrid p{
+        font-size:1.3em;
+    }
+
+} 
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) and (max-width:1919px) {
+    #menuCarousel{
+        width: 100%;
+        height: 100%;
+    }
+    div#aboutPanel {
+        margin-left: 5%;
+    }
+    #panelHeaderMenu {
+        margin-left: 1%;
+        width: 175%;
+    }
+    div#myCarouselMenu {
+        margin-top: 100%;
+    }
+    #homeGrid {
+        width: 100%;
+        margin-left: 1%;
+    }
+    div#myCarousel {
+        margin:5%;
+        margin-top:10%;
+    }
+    #homeGrid p{
+        font-size:1.3em;
+    }
+    #panelHeaderMenu h1 {
+        font-size: 2em!important;
+    }
+    #menuCarousel {
+        margin-top: 95%;
+        width: 100%;
+        height: 100%;
+    }
+  
+
+}

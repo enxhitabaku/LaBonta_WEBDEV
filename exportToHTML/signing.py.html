@@ -1,0 +1,236 @@
+<html>
+<head>
+<title>signing.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #629755; font-style: italic;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6a8759;}
+.s4 { color: #a5c261;}
+.s5 { color: #6897bb;}
+.s6 { color: #808080;}
+.ln { color: #606366; font-weight: normal; font-style: normal; }
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+signing.py</font>
+</center></td></tr></table>
+<pre><a name="l1"><span class="ln">1    </span></a><span class="s0">&quot;&quot;&quot; 
+<a name="l2"><span class="ln">2    </span></a>Functions for creating and restoring url-safe signed JSON objects. 
+<a name="l3"><span class="ln">3    </span></a> 
+<a name="l4"><span class="ln">4    </span></a>The format used looks like this: 
+<a name="l5"><span class="ln">5    </span></a> 
+<a name="l6"><span class="ln">6    </span></a>&gt;&gt;&gt; signing.dumps(&quot;hello&quot;) 
+<a name="l7"><span class="ln">7    </span></a>'ImhlbGxvIg:1QaUZC:YIye-ze3TTx7gtSv422nZA4sgmk' 
+<a name="l8"><span class="ln">8    </span></a> 
+<a name="l9"><span class="ln">9    </span></a>There are two components here, separated by a ':'. The first component is a 
+<a name="l10"><span class="ln">10   </span></a>URLsafe base64 encoded JSON of the object passed to dumps(). The second 
+<a name="l11"><span class="ln">11   </span></a>component is a base64 encoded hmac/SHA1 hash of &quot;$first_component:$secret&quot; 
+<a name="l12"><span class="ln">12   </span></a> 
+<a name="l13"><span class="ln">13   </span></a>signing.loads(s) checks the signature and returns the deserialized object. 
+<a name="l14"><span class="ln">14   </span></a>If the signature fails, a BadSignature exception is raised. 
+<a name="l15"><span class="ln">15   </span></a> 
+<a name="l16"><span class="ln">16   </span></a>&gt;&gt;&gt; signing.loads(&quot;ImhlbGxvIg:1QaUZC:YIye-ze3TTx7gtSv422nZA4sgmk&quot;) 
+<a name="l17"><span class="ln">17   </span></a>'hello' 
+<a name="l18"><span class="ln">18   </span></a>&gt;&gt;&gt; signing.loads(&quot;ImhlbGxvIg:1QaUZC:YIye-ze3TTx7gtSv422nZA4sgmk-modified&quot;) 
+<a name="l19"><span class="ln">19   </span></a>... 
+<a name="l20"><span class="ln">20   </span></a>BadSignature: Signature failed: ImhlbGxvIg:1QaUZC:YIye-ze3TTx7gtSv422nZA4sgmk-modified 
+<a name="l21"><span class="ln">21   </span></a> 
+<a name="l22"><span class="ln">22   </span></a>You can optionally compress the JSON prior to base64 encoding it to save 
+<a name="l23"><span class="ln">23   </span></a>space, using the compress=True argument. This checks if compression actually 
+<a name="l24"><span class="ln">24   </span></a>helps and only applies compression if the result is a shorter string: 
+<a name="l25"><span class="ln">25   </span></a> 
+<a name="l26"><span class="ln">26   </span></a>&gt;&gt;&gt; signing.dumps(list(range(1, 20)), compress=True) 
+<a name="l27"><span class="ln">27   </span></a>'.eJwFwcERACAIwLCF-rCiILN47r-GyZVJsNgkxaFxoDgxcOHGxMKD_T7vhAml:1QaUaL:BA0thEZrp4FQVXIXuOvYJtLJSrQ' 
+<a name="l28"><span class="ln">28   </span></a> 
+<a name="l29"><span class="ln">29   </span></a>The fact that the string is compressed is signalled by the prefixed '.' at the 
+<a name="l30"><span class="ln">30   </span></a>start of the base64 JSON. 
+<a name="l31"><span class="ln">31   </span></a> 
+<a name="l32"><span class="ln">32   </span></a>There are 65 url-safe characters: the 64 used by url-safe base64 and the ':'. 
+<a name="l33"><span class="ln">33   </span></a>These functions make use of all of them. 
+<a name="l34"><span class="ln">34   </span></a>&quot;&quot;&quot;</span>
+<a name="l35"><span class="ln">35   </span></a>
+<a name="l36"><span class="ln">36   </span></a><span class="s2">import </span><span class="s1">base64</span>
+<a name="l37"><span class="ln">37   </span></a><span class="s2">import </span><span class="s1">datetime</span>
+<a name="l38"><span class="ln">38   </span></a><span class="s2">import </span><span class="s1">json</span>
+<a name="l39"><span class="ln">39   </span></a><span class="s2">import </span><span class="s1">time</span>
+<a name="l40"><span class="ln">40   </span></a><span class="s2">import </span><span class="s1">zlib</span>
+<a name="l41"><span class="ln">41   </span></a>
+<a name="l42"><span class="ln">42   </span></a><span class="s2">from </span><span class="s1">django.conf </span><span class="s2">import </span><span class="s1">settings</span>
+<a name="l43"><span class="ln">43   </span></a><span class="s2">from </span><span class="s1">django.utils </span><span class="s2">import </span><span class="s1">baseconv</span>
+<a name="l44"><span class="ln">44   </span></a><span class="s2">from </span><span class="s1">django.utils.crypto </span><span class="s2">import </span><span class="s1">constant_time_compare</span><span class="s2">, </span><span class="s1">salted_hmac</span>
+<a name="l45"><span class="ln">45   </span></a><span class="s2">from </span><span class="s1">django.utils.encoding </span><span class="s2">import </span><span class="s1">force_bytes</span>
+<a name="l46"><span class="ln">46   </span></a><span class="s2">from </span><span class="s1">django.utils.module_loading </span><span class="s2">import </span><span class="s1">import_string</span>
+<a name="l47"><span class="ln">47   </span></a><span class="s2">from </span><span class="s1">django.utils.regex_helper </span><span class="s2">import </span><span class="s1">_lazy_re_compile</span>
+<a name="l48"><span class="ln">48   </span></a>
+<a name="l49"><span class="ln">49   </span></a><span class="s1">_SEP_UNSAFE = _lazy_re_compile(</span><span class="s3">r'^[A-z0-9-_=]*$'</span><span class="s1">)</span>
+<a name="l50"><span class="ln">50   </span></a>
+<a name="l51"><span class="ln">51   </span></a>
+<a name="l52"><span class="ln">52   </span></a><span class="s2">class </span><span class="s1">BadSignature(Exception):</span>
+<a name="l53"><span class="ln">53   </span></a>    <span class="s0">&quot;&quot;&quot;Signature does not match.&quot;&quot;&quot;</span>
+<a name="l54"><span class="ln">54   </span></a>    <span class="s2">pass</span>
+<a name="l55"><span class="ln">55   </span></a>
+<a name="l56"><span class="ln">56   </span></a>
+<a name="l57"><span class="ln">57   </span></a><span class="s2">class </span><span class="s1">SignatureExpired(BadSignature):</span>
+<a name="l58"><span class="ln">58   </span></a>    <span class="s0">&quot;&quot;&quot;Signature timestamp is older than required max_age.&quot;&quot;&quot;</span>
+<a name="l59"><span class="ln">59   </span></a>    <span class="s2">pass</span>
+<a name="l60"><span class="ln">60   </span></a>
+<a name="l61"><span class="ln">61   </span></a>
+<a name="l62"><span class="ln">62   </span></a><span class="s2">def </span><span class="s1">b64_encode(s):</span>
+<a name="l63"><span class="ln">63   </span></a>    <span class="s2">return </span><span class="s1">base64.urlsafe_b64encode(s).strip(</span><span class="s4">b'='</span><span class="s1">)</span>
+<a name="l64"><span class="ln">64   </span></a>
+<a name="l65"><span class="ln">65   </span></a>
+<a name="l66"><span class="ln">66   </span></a><span class="s2">def </span><span class="s1">b64_decode(s):</span>
+<a name="l67"><span class="ln">67   </span></a>    <span class="s1">pad = </span><span class="s4">b'=' </span><span class="s1">* (-len(s) % </span><span class="s5">4</span><span class="s1">)</span>
+<a name="l68"><span class="ln">68   </span></a>    <span class="s2">return </span><span class="s1">base64.urlsafe_b64decode(s + pad)</span>
+<a name="l69"><span class="ln">69   </span></a>
+<a name="l70"><span class="ln">70   </span></a>
+<a name="l71"><span class="ln">71   </span></a><span class="s2">def </span><span class="s1">base64_hmac(salt</span><span class="s2">, </span><span class="s1">value</span><span class="s2">, </span><span class="s1">key</span><span class="s2">, </span><span class="s1">algorithm=</span><span class="s3">'sha1'</span><span class="s1">):</span>
+<a name="l72"><span class="ln">72   </span></a>    <span class="s2">return </span><span class="s1">b64_encode(salted_hmac(salt</span><span class="s2">, </span><span class="s1">value</span><span class="s2">, </span><span class="s1">key</span><span class="s2">, </span><span class="s1">algorithm=algorithm).digest()).decode()</span>
+<a name="l73"><span class="ln">73   </span></a>
+<a name="l74"><span class="ln">74   </span></a>
+<a name="l75"><span class="ln">75   </span></a><span class="s2">def </span><span class="s1">get_cookie_signer(salt=</span><span class="s3">'django.core.signing.get_cookie_signer'</span><span class="s1">):</span>
+<a name="l76"><span class="ln">76   </span></a>    <span class="s1">Signer = import_string(settings.SIGNING_BACKEND)</span>
+<a name="l77"><span class="ln">77   </span></a>    <span class="s1">key = force_bytes(settings.SECRET_KEY)  </span><span class="s6"># SECRET_KEY may be str or bytes.</span>
+<a name="l78"><span class="ln">78   </span></a>    <span class="s2">return </span><span class="s1">Signer(</span><span class="s4">b'django.http.cookies' </span><span class="s1">+ key</span><span class="s2">, </span><span class="s1">salt=salt)</span>
+<a name="l79"><span class="ln">79   </span></a>
+<a name="l80"><span class="ln">80   </span></a>
+<a name="l81"><span class="ln">81   </span></a><span class="s2">class </span><span class="s1">JSONSerializer:</span>
+<a name="l82"><span class="ln">82   </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l83"><span class="ln">83   </span></a>    Simple wrapper around json to be used in signing.dumps and 
+<a name="l84"><span class="ln">84   </span></a>    signing.loads. 
+<a name="l85"><span class="ln">85   </span></a>    &quot;&quot;&quot;</span>
+<a name="l86"><span class="ln">86   </span></a>    <span class="s2">def </span><span class="s1">dumps(self</span><span class="s2">, </span><span class="s1">obj):</span>
+<a name="l87"><span class="ln">87   </span></a>        <span class="s2">return </span><span class="s1">json.dumps(obj</span><span class="s2">, </span><span class="s1">separators=(</span><span class="s3">','</span><span class="s2">, </span><span class="s3">':'</span><span class="s1">)).encode(</span><span class="s3">'latin-1'</span><span class="s1">)</span>
+<a name="l88"><span class="ln">88   </span></a>
+<a name="l89"><span class="ln">89   </span></a>    <span class="s2">def </span><span class="s1">loads(self</span><span class="s2">, </span><span class="s1">data):</span>
+<a name="l90"><span class="ln">90   </span></a>        <span class="s2">return </span><span class="s1">json.loads(data.decode(</span><span class="s3">'latin-1'</span><span class="s1">))</span>
+<a name="l91"><span class="ln">91   </span></a>
+<a name="l92"><span class="ln">92   </span></a>
+<a name="l93"><span class="ln">93   </span></a><span class="s2">def </span><span class="s1">dumps(obj</span><span class="s2">, </span><span class="s1">key=</span><span class="s2">None, </span><span class="s1">salt=</span><span class="s3">'django.core.signing'</span><span class="s2">, </span><span class="s1">serializer=JSONSerializer</span><span class="s2">, </span><span class="s1">compress=</span><span class="s2">False</span><span class="s1">):</span>
+<a name="l94"><span class="ln">94   </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l95"><span class="ln">95   </span></a>    Return URL-safe, hmac signed base64 compressed JSON string. If key is 
+<a name="l96"><span class="ln">96   </span></a>    None, use settings.SECRET_KEY instead. The hmac algorithm is the default 
+<a name="l97"><span class="ln">97   </span></a>    Signer algorithm. 
+<a name="l98"><span class="ln">98   </span></a> 
+<a name="l99"><span class="ln">99   </span></a>    If compress is True (not the default), check if compressing using zlib can 
+<a name="l100"><span class="ln">100  </span></a>    save some space. Prepend a '.' to signify compression. This is included 
+<a name="l101"><span class="ln">101  </span></a>    in the signature, to protect against zip bombs. 
+<a name="l102"><span class="ln">102  </span></a> 
+<a name="l103"><span class="ln">103  </span></a>    Salt can be used to namespace the hash, so that a signed string is 
+<a name="l104"><span class="ln">104  </span></a>    only valid for a given namespace. Leaving this at the default 
+<a name="l105"><span class="ln">105  </span></a>    value or re-using a salt value across different parts of your 
+<a name="l106"><span class="ln">106  </span></a>    application without good cause is a security risk. 
+<a name="l107"><span class="ln">107  </span></a> 
+<a name="l108"><span class="ln">108  </span></a>    The serializer is expected to return a bytestring. 
+<a name="l109"><span class="ln">109  </span></a>    &quot;&quot;&quot;</span>
+<a name="l110"><span class="ln">110  </span></a>    <span class="s1">data = serializer().dumps(obj)</span>
+<a name="l111"><span class="ln">111  </span></a>
+<a name="l112"><span class="ln">112  </span></a>    <span class="s6"># Flag for if it's been compressed or not</span>
+<a name="l113"><span class="ln">113  </span></a>    <span class="s1">is_compressed = </span><span class="s2">False</span>
+<a name="l114"><span class="ln">114  </span></a>
+<a name="l115"><span class="ln">115  </span></a>    <span class="s2">if </span><span class="s1">compress:</span>
+<a name="l116"><span class="ln">116  </span></a>        <span class="s6"># Avoid zlib dependency unless compress is being used</span>
+<a name="l117"><span class="ln">117  </span></a>        <span class="s1">compressed = zlib.compress(data)</span>
+<a name="l118"><span class="ln">118  </span></a>        <span class="s2">if </span><span class="s1">len(compressed) &lt; (len(data) - </span><span class="s5">1</span><span class="s1">):</span>
+<a name="l119"><span class="ln">119  </span></a>            <span class="s1">data = compressed</span>
+<a name="l120"><span class="ln">120  </span></a>            <span class="s1">is_compressed = </span><span class="s2">True</span>
+<a name="l121"><span class="ln">121  </span></a>    <span class="s1">base64d = b64_encode(data).decode()</span>
+<a name="l122"><span class="ln">122  </span></a>    <span class="s2">if </span><span class="s1">is_compressed:</span>
+<a name="l123"><span class="ln">123  </span></a>        <span class="s1">base64d = </span><span class="s3">'.' </span><span class="s1">+ base64d</span>
+<a name="l124"><span class="ln">124  </span></a>    <span class="s2">return </span><span class="s1">TimestampSigner(key</span><span class="s2">, </span><span class="s1">salt=salt).sign(base64d)</span>
+<a name="l125"><span class="ln">125  </span></a>
+<a name="l126"><span class="ln">126  </span></a>
+<a name="l127"><span class="ln">127  </span></a><span class="s2">def </span><span class="s1">loads(s</span><span class="s2">, </span><span class="s1">key=</span><span class="s2">None, </span><span class="s1">salt=</span><span class="s3">'django.core.signing'</span><span class="s2">, </span><span class="s1">serializer=JSONSerializer</span><span class="s2">, </span><span class="s1">max_age=</span><span class="s2">None</span><span class="s1">):</span>
+<a name="l128"><span class="ln">128  </span></a>    <span class="s0">&quot;&quot;&quot; 
+<a name="l129"><span class="ln">129  </span></a>    Reverse of dumps(), raise BadSignature if signature fails. 
+<a name="l130"><span class="ln">130  </span></a> 
+<a name="l131"><span class="ln">131  </span></a>    The serializer is expected to accept a bytestring. 
+<a name="l132"><span class="ln">132  </span></a>    &quot;&quot;&quot;</span>
+<a name="l133"><span class="ln">133  </span></a>    <span class="s6"># TimestampSigner.unsign() returns str but base64 and zlib compression</span>
+<a name="l134"><span class="ln">134  </span></a>    <span class="s6"># operate on bytes.</span>
+<a name="l135"><span class="ln">135  </span></a>    <span class="s1">base64d = TimestampSigner(key</span><span class="s2">, </span><span class="s1">salt=salt).unsign(s</span><span class="s2">, </span><span class="s1">max_age=max_age).encode()</span>
+<a name="l136"><span class="ln">136  </span></a>    <span class="s1">decompress = base64d[:</span><span class="s5">1</span><span class="s1">] == </span><span class="s4">b'.'</span>
+<a name="l137"><span class="ln">137  </span></a>    <span class="s2">if </span><span class="s1">decompress:</span>
+<a name="l138"><span class="ln">138  </span></a>        <span class="s6"># It's compressed; uncompress it first</span>
+<a name="l139"><span class="ln">139  </span></a>        <span class="s1">base64d = base64d[</span><span class="s5">1</span><span class="s1">:]</span>
+<a name="l140"><span class="ln">140  </span></a>    <span class="s1">data = b64_decode(base64d)</span>
+<a name="l141"><span class="ln">141  </span></a>    <span class="s2">if </span><span class="s1">decompress:</span>
+<a name="l142"><span class="ln">142  </span></a>        <span class="s1">data = zlib.decompress(data)</span>
+<a name="l143"><span class="ln">143  </span></a>    <span class="s2">return </span><span class="s1">serializer().loads(data)</span>
+<a name="l144"><span class="ln">144  </span></a>
+<a name="l145"><span class="ln">145  </span></a>
+<a name="l146"><span class="ln">146  </span></a><span class="s2">class </span><span class="s1">Signer:</span>
+<a name="l147"><span class="ln">147  </span></a>    <span class="s6"># RemovedInDjango40Warning.</span>
+<a name="l148"><span class="ln">148  </span></a>    <span class="s1">legacy_algorithm = </span><span class="s3">'sha1'</span>
+<a name="l149"><span class="ln">149  </span></a>
+<a name="l150"><span class="ln">150  </span></a>    <span class="s2">def </span><span class="s1">__init__(self</span><span class="s2">, </span><span class="s1">key=</span><span class="s2">None, </span><span class="s1">sep=</span><span class="s3">':'</span><span class="s2">, </span><span class="s1">salt=</span><span class="s2">None, </span><span class="s1">algorithm=</span><span class="s2">None</span><span class="s1">):</span>
+<a name="l151"><span class="ln">151  </span></a>        <span class="s1">self.key = key </span><span class="s2">or </span><span class="s1">settings.SECRET_KEY</span>
+<a name="l152"><span class="ln">152  </span></a>        <span class="s1">self.sep = sep</span>
+<a name="l153"><span class="ln">153  </span></a>        <span class="s2">if </span><span class="s1">_SEP_UNSAFE.match(self.sep):</span>
+<a name="l154"><span class="ln">154  </span></a>            <span class="s2">raise </span><span class="s1">ValueError(</span>
+<a name="l155"><span class="ln">155  </span></a>                <span class="s3">'Unsafe Signer separator: %r (cannot be empty or consist of '</span>
+<a name="l156"><span class="ln">156  </span></a>                <span class="s3">'only A-z0-9-_=)' </span><span class="s1">% sep</span><span class="s2">,</span>
+<a name="l157"><span class="ln">157  </span></a>            <span class="s1">)</span>
+<a name="l158"><span class="ln">158  </span></a>        <span class="s1">self.salt = salt </span><span class="s2">or </span><span class="s3">'%s.%s' </span><span class="s1">% (self.__class__.__module__</span><span class="s2">, </span><span class="s1">self.__class__.__name__)</span>
+<a name="l159"><span class="ln">159  </span></a>        <span class="s6"># RemovedInDjango40Warning: when the deprecation ends, replace with:</span>
+<a name="l160"><span class="ln">160  </span></a>        <span class="s6"># self.algorithm = algorithm or 'sha256'</span>
+<a name="l161"><span class="ln">161  </span></a>        <span class="s1">self.algorithm = algorithm </span><span class="s2">or </span><span class="s1">settings.DEFAULT_HASHING_ALGORITHM</span>
+<a name="l162"><span class="ln">162  </span></a>
+<a name="l163"><span class="ln">163  </span></a>    <span class="s2">def </span><span class="s1">signature(self</span><span class="s2">, </span><span class="s1">value):</span>
+<a name="l164"><span class="ln">164  </span></a>        <span class="s2">return </span><span class="s1">base64_hmac(self.salt + </span><span class="s3">'signer'</span><span class="s2">, </span><span class="s1">value</span><span class="s2">, </span><span class="s1">self.key</span><span class="s2">, </span><span class="s1">algorithm=self.algorithm)</span>
+<a name="l165"><span class="ln">165  </span></a>
+<a name="l166"><span class="ln">166  </span></a>    <span class="s2">def </span><span class="s1">_legacy_signature(self</span><span class="s2">, </span><span class="s1">value):</span>
+<a name="l167"><span class="ln">167  </span></a>        <span class="s6"># RemovedInDjango40Warning.</span>
+<a name="l168"><span class="ln">168  </span></a>        <span class="s2">return </span><span class="s1">base64_hmac(self.salt + </span><span class="s3">'signer'</span><span class="s2">, </span><span class="s1">value</span><span class="s2">, </span><span class="s1">self.key</span><span class="s2">, </span><span class="s1">algorithm=self.legacy_algorithm)</span>
+<a name="l169"><span class="ln">169  </span></a>
+<a name="l170"><span class="ln">170  </span></a>    <span class="s2">def </span><span class="s1">sign(self</span><span class="s2">, </span><span class="s1">value):</span>
+<a name="l171"><span class="ln">171  </span></a>        <span class="s2">return </span><span class="s3">'%s%s%s' </span><span class="s1">% (value</span><span class="s2">, </span><span class="s1">self.sep</span><span class="s2">, </span><span class="s1">self.signature(value))</span>
+<a name="l172"><span class="ln">172  </span></a>
+<a name="l173"><span class="ln">173  </span></a>    <span class="s2">def </span><span class="s1">unsign(self</span><span class="s2">, </span><span class="s1">signed_value):</span>
+<a name="l174"><span class="ln">174  </span></a>        <span class="s2">if </span><span class="s1">self.sep </span><span class="s2">not in </span><span class="s1">signed_value:</span>
+<a name="l175"><span class="ln">175  </span></a>            <span class="s2">raise </span><span class="s1">BadSignature(</span><span class="s3">'No &quot;%s&quot; found in value' </span><span class="s1">% self.sep)</span>
+<a name="l176"><span class="ln">176  </span></a>        <span class="s1">value</span><span class="s2">, </span><span class="s1">sig = signed_value.rsplit(self.sep</span><span class="s2">, </span><span class="s5">1</span><span class="s1">)</span>
+<a name="l177"><span class="ln">177  </span></a>        <span class="s2">if </span><span class="s1">(</span>
+<a name="l178"><span class="ln">178  </span></a>            <span class="s1">constant_time_compare(sig</span><span class="s2">, </span><span class="s1">self.signature(value)) </span><span class="s2">or </span><span class="s1">(</span>
+<a name="l179"><span class="ln">179  </span></a>                <span class="s1">self.legacy_algorithm </span><span class="s2">and</span>
+<a name="l180"><span class="ln">180  </span></a>                <span class="s1">constant_time_compare(sig</span><span class="s2">, </span><span class="s1">self._legacy_signature(value))</span>
+<a name="l181"><span class="ln">181  </span></a>            <span class="s1">)</span>
+<a name="l182"><span class="ln">182  </span></a>        <span class="s1">):</span>
+<a name="l183"><span class="ln">183  </span></a>            <span class="s2">return </span><span class="s1">value</span>
+<a name="l184"><span class="ln">184  </span></a>        <span class="s2">raise </span><span class="s1">BadSignature(</span><span class="s3">'Signature &quot;%s&quot; does not match' </span><span class="s1">% sig)</span>
+<a name="l185"><span class="ln">185  </span></a>
+<a name="l186"><span class="ln">186  </span></a>
+<a name="l187"><span class="ln">187  </span></a><span class="s2">class </span><span class="s1">TimestampSigner(Signer):</span>
+<a name="l188"><span class="ln">188  </span></a>
+<a name="l189"><span class="ln">189  </span></a>    <span class="s2">def </span><span class="s1">timestamp(self):</span>
+<a name="l190"><span class="ln">190  </span></a>        <span class="s2">return </span><span class="s1">baseconv.base62.encode(int(time.time()))</span>
+<a name="l191"><span class="ln">191  </span></a>
+<a name="l192"><span class="ln">192  </span></a>    <span class="s2">def </span><span class="s1">sign(self</span><span class="s2">, </span><span class="s1">value):</span>
+<a name="l193"><span class="ln">193  </span></a>        <span class="s1">value = </span><span class="s3">'%s%s%s' </span><span class="s1">% (value</span><span class="s2">, </span><span class="s1">self.sep</span><span class="s2">, </span><span class="s1">self.timestamp())</span>
+<a name="l194"><span class="ln">194  </span></a>        <span class="s2">return </span><span class="s1">super().sign(value)</span>
+<a name="l195"><span class="ln">195  </span></a>
+<a name="l196"><span class="ln">196  </span></a>    <span class="s2">def </span><span class="s1">unsign(self</span><span class="s2">, </span><span class="s1">value</span><span class="s2">, </span><span class="s1">max_age=</span><span class="s2">None</span><span class="s1">):</span>
+<a name="l197"><span class="ln">197  </span></a>        <span class="s0">&quot;&quot;&quot; 
+<a name="l198"><span class="ln">198  </span></a>        Retrieve original value and check it wasn't signed more 
+<a name="l199"><span class="ln">199  </span></a>        than max_age seconds ago. 
+<a name="l200"><span class="ln">200  </span></a>        &quot;&quot;&quot;</span>
+<a name="l201"><span class="ln">201  </span></a>        <span class="s1">result = super().unsign(value)</span>
+<a name="l202"><span class="ln">202  </span></a>        <span class="s1">value</span><span class="s2">, </span><span class="s1">timestamp = result.rsplit(self.sep</span><span class="s2">, </span><span class="s5">1</span><span class="s1">)</span>
+<a name="l203"><span class="ln">203  </span></a>        <span class="s1">timestamp = baseconv.base62.decode(timestamp)</span>
+<a name="l204"><span class="ln">204  </span></a>        <span class="s2">if </span><span class="s1">max_age </span><span class="s2">is not None</span><span class="s1">:</span>
+<a name="l205"><span class="ln">205  </span></a>            <span class="s2">if </span><span class="s1">isinstance(max_age</span><span class="s2">, </span><span class="s1">datetime.timedelta):</span>
+<a name="l206"><span class="ln">206  </span></a>                <span class="s1">max_age = max_age.total_seconds()</span>
+<a name="l207"><span class="ln">207  </span></a>            <span class="s6"># Check timestamp is not older than max_age</span>
+<a name="l208"><span class="ln">208  </span></a>            <span class="s1">age = time.time() - timestamp</span>
+<a name="l209"><span class="ln">209  </span></a>            <span class="s2">if </span><span class="s1">age &gt; max_age:</span>
+<a name="l210"><span class="ln">210  </span></a>                <span class="s2">raise </span><span class="s1">SignatureExpired(</span>
+<a name="l211"><span class="ln">211  </span></a>                    <span class="s3">'Signature age %s &gt; %s seconds' </span><span class="s1">% (age</span><span class="s2">, </span><span class="s1">max_age))</span>
+<a name="l212"><span class="ln">212  </span></a>        <span class="s2">return </span><span class="s1">value</span>
+<a name="l213"><span class="ln">213  </span></a></pre>
+</body>
+</html>
