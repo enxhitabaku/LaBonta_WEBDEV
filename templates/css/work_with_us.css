@@ -1,4 +1,8 @@
-/*Navigation Bar*/
+.row{
+    margin: 0;
+}
+
+/* Navigation Bar */
 .main-nav{
 
     margin: auto;
@@ -14,7 +18,16 @@
     background-color: transparent!important;
     border-color: transparent!important;
 
-    z-index:1;
+    z-index:999;
+}
+
+.navbar-fixed-top.scrolled {
+    background-color: #D9cf2b !important;
+    transition: background-color 500ms ease-in;
+  }
+
+.navbar-header a{
+    position: relative;
 }
 
 .navbar {
@@ -48,90 +61,316 @@
     color:#000;
     background: none;
 }
+/* NAV END */
 
-/*Carousel*/
 
-html,
-body {
-  height: 100%;
-  position: relative;
-  margin: 0;
-  padding: 0;
-}
-.section {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
-
-.section-jobs{
-    /*top:100%;*/
+/* Main Section */
+#main_section, img.img-responsive, #main_section #main_carousel{
     width: 100%;
-    height: 100%;
-    background: Yellow;
-    z-index: 0;
-    margin: 0;
+    height:100%
 }
-.section-jobs h1 {
-  margin: 0;
-  text-align: center;
-}
-.section-footer{
-    background: gray;
-}
-.fixed-footer{
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /*background: gray;*/
-    text-align: center;
-}
- h1{
-    margin: 0px;
-}
-
-.absolute_fixed-footer h1{
-    position: fixed;
-    top: 0;
-}
-
-.fixed-section {
-    position: fixed;
-    top: 0;
-    transform: translateY(-50%);
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-    text-align: center;
-
-}
-.container{
-    width: 100%;
-}
-
-.relative{
+#main_section{
     position: relative;
     display: block;
+    max-width: 100vh;
+}
+#main_carousel {
+    position: fixed;
+    top:0;
+    left:0;
+    z-index: 1;
+    background-color: black;
+ } 
+#inner_main_carousel{
+    z-index: 2;
     height: 100%;
-    width:100%;
+} 
+#inner_main_carousel img{
+    z-index: 1;
+    height: 100%;
+    object-fit: cover;
 }
 
+@media only screen and (max-width: 1000px) {
+    #inner_main_carousel img{
+        width: auto!important;
+    }
+  }
 
-.header-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgb(0, 0, 0);
-  opacity: 0;
-    z-index: 5;
-}
+/*CSS for .arrow div element that includes scroll down button*/
+.arrow {
+    position: absolute;
+    bottom: 45px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .arrow span {
+    display: block;
+    width: 20px;
+    height: 20px;
+  
+    border-bottom: 5px solid white;
+    border-right: 5px solid white;
+    transform: rotate(45deg);
+    margin: -10px;
+    animation: animate 2s infinite;
+  }
+  
+  .arrow span:nth-child(2) {
+    animation-delay: -0.2s;
+  }
+  .arrow span:nth-child(3) {
+    animation-delay: -0.4s;
+  }
+  @keyframes animate {
+    0% {
+      opacity: 0;
+      transform: rotate(45deg) translate(-20px, -20px);
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: rotate(45deg) translate(20px, 20px);
+    }
+  }
+  /* scroll down button css END*/
 
-.relative{
+  
+ /* Job Section  */
+ #job_section{
     position: relative;
+    width: 100%;
+    margin-top: 100vh;
+    background-color: #D9CF2B;
+    z-index: 10;
+ }
+
+ /* Job Desc */
+ #job_description{
+    width: 100%;
+    background-color: white; 
+    padding: 100px;
 }
+
+#job_description .container{
+    text-align: justify;
+}
+
+ #job_description h3{
+    text-align: center;
+    color: #7B7B7B;
+    letter-spacing: 2.5px;
+    font-variant-caps: all-small-caps;
+    font-family: "Founders Grotesk Semibold", serif;
+    font-style: normal;
+    font-weight: 700;
+    margin-bottom: 50px;
+ }
+
+ #job_description p{
+     font-family: "Tiempos Text Regular", serif;
+     color: black;
+     font-style: normal;
+     font-weight: 400;
+     line-height: 1.9;
+
+ }
+
+#to_be_shown{
+    display: none;
+}
+
+ @media only screen and (max-width: 1000px) {
+     #to_be_shown{
+         display: inline;
+         font-size: 36px;
+     }
+     .to_be_hidden{
+         display: none;
+     }
+ }
+
+ /* Adding style to classes that will be toggle in jquery */
+ .show{
+    display: block;
+ }
+
+/* Job Notif */
+ #job_notification{
+    width: 100%;
+    /* padding: 100px; */
+    padding: 50px;
+    padding-bottom: 250px;
+ }
+
+ #job_notification h3{
+    text-align: center;
+    color: black;
+    font-variant-caps: all-small-caps;
+    font-family: "Founders Grotesk Semibold", serif;
+    font-style: normal;
+    font-weight: 700;
+    margin-bottom: 50px;
+ }
+
+ .job_notification_container{
+     display: block;
+ }
+
+ .job_notification_container .job_title{
+    font-size: 36px;
+    color:#222;
+    line-height: 1.1;
+    font-family: "Tiempos Text Bold", serif;
+    font-style: normal;
+    font-weight: 700;
+    margin-bottom: 35px;
+ }
+ 
+ .job_notification_container #static_sentence, .qualifications_list, .job_role{
+    font-family: "Tiempos Text Regular", serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size:14px;
+    line-height: 1.4;
+ }
+
+ #job_application_header_img{
+    /* margin-left:15%;  */
+     /* margin-top: -200px; */
+ }
+ #job_application_header_img img{
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin-left: 150px;
+    margin-right: auto;
+    margin-top: -200px;
+ }
+
+ @media only screen and (max-width: 1000px) {
+    #job_application_header_img img{
+        display: block;
+        width: 100%;
+        height: 100%;
+        margin-left: auto;
+        margin-right: auto;
+     }
+     #job_app_header_row{
+         display: flex; 
+         flex-flow: column-reverse;
+     }
+  }
+
+
+ /* Job Form Application */
+.job_application_container{
+    margin-top: 3%;
+    padding: 0;
+}
+
+
+#job_application_form{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 200;
+    background-color: white;
+}
+
+#job_application_form h1{  
+    font-family: "Tiempos Headline Black", serif;
+    color: black;
+    font-style: normal;
+    line-height: 1.1;
+    font-weight: 800;
+    font-size: 10rem;
+    margin-top: 0px;
+    /* margin-left: 60%; */
+}
+
+#job_application_form .job_application_header {
+    width: 100%;
+    padding-top: 100px;
+    padding-bottom: 100px;
+}
+
+.form-group input{
+    padding: 25px;
+}
+
+#job_application_form .job_application_container{
+    background-color: #FAFAFA;
+}
+#job_application_form label.btn-for-files {
+    width: 30%;
+    background-color: #D9CF2B;
+    color: white;
+}
+#job_application_form label.btn-for-files p{
+    height: 100%;
+    padding: 15px;
+    margin: 0;
+    text-align: center;
+}
+#job_application_form #submit_form{
+    text-transform: uppercase;
+    font-weight: bold !important;
+    background-color: #fff;
+    color: #111;
+    font-family: "Tiempos Text Medium", serif;
+    font-style: normal;
+    font-size: 14px;
+    /* width: 195px; */
+    padding: 17px;
+    border: 1px solid #E4E4E4;
+    -webkit-transition: width 2s;
+    transition: width 2s;
+    position: relative;
+    width: 100%;
+    right: 50%;
+    margin-bottom: 5%;
+}
+
+.job_application_container .row{
+    background: white;
+}
+.submit_col{
+    margin-top:40px;
+    padding-left: 50%;
+}
+
+/* Footer */
+#footer{
+    position: relative!important;
+    z-index: 2;
+    height: 350px;
+    width: 100%;
+    background: url('footerResized.png');
+    background-size: auto;
+    background-attachment: fixed;
+}
+
+#footer #header_li{
+    font-size: 24px;
+    font-weight: 900;
+    font-variant-caps: all-petite-caps;
+}
+#footer li{
+    list-style: none;
+    color: #111;
+    padding-top: 5px;
+}
+#footer a{
+    padding-left: 25px;
+    color: #000;
+
+}
+#footer .row{
+    margin-top:120px;
+}
+
+
+

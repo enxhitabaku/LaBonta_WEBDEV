@@ -1,4 +1,7 @@
 
+body{
+    overflow-x: hidden;
+}
 
 header,body,footer{
     background-color:#D3D2A2;
@@ -232,20 +235,108 @@ a.float:hover + div.label-container{
 
 
 /*HOME Carousel CSS*/
-#homeContainer{
-    margin-top: 7%;
-}
+/*HOME Carousel CSS*/
+
 .myCarouselContainer img{
     width: 100%;
 }
-#homePanel{
-    background-color: transparent !important;
-    border-style: none;
+
+#myCarousel {
+    margin: 5%;
+    margin-left: 3%;
+    margin-right: 3%;
+    position: relative;
 }
-#homeGrid{
-    
-    box-shadow: 10px 10px 5px #c3b17f, -10px -10px 10px #c3b17f;
+#myCarousel .carousel-control {
+    opacity: 1!important;
 }
+
+#myCarousel img{
+    height: 600px!important;
+    object-fit: cover;
+    object-position: 0% 60%;
+}
+#myCarousel .left , #myCarousel .right{
+    /*z-index: 2;*/
+    color: white;
+}
+
+@media only screen and (max-width: 750px) {
+    #myCarousel .left , .right{
+        /*display: none;*/
+        /*visibility: hidden;*/
+    /*    Work on THIS NOT ONLY Uncomment */
+    }
+    #myCarousel .ctrl{
+        display: none;
+    }
+    #aboutYear, #imgPanel{
+        display: none!important;
+    }
+    #menu{
+        padding-bottom: 5%;
+    }
+    #menuContainer{
+        margin-right:auto!important;
+    }
+    #myCarousel img{
+        object-position: 80% 60%;
+    }
+
+    .dummyDiv{
+        display: none;
+    }
+    .centered_main_txt {
+        margin-top: 125px;
+        width: 100%;
+    }
+
+}
+
+/*My Carousel Bg Opacity */
+.layer {
+    background-color: rgba(2,16,63,.65);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.centered_main_txt{
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    /*top: 50%*/
+    margin-top: 100px;
+}
+.img_desc_row{
+    margin-top: 25px;
+}
+
+.centered_inner_txt{
+    width: 100%;
+    position: relative;
+    left: -50%;
+}
+ .centered_inner_txt h1{
+    padding: 0;
+    margin: 0;
+    font-family: GabrielaStencil;
+    font-size: 2.5em;
+    color: #fff;
+    letter-spacing: 8px;
+    line-height: 35px;
+    white-space: pre-line;
+    text-align: center;
+}
+
+.inner_image{
+    display: flex;
+    justify-content: center;
+}
+
 
 /*About*/
 
@@ -264,8 +355,10 @@ a.float:hover + div.label-container{
 
 #aboutContainer img{
     height: 100%;
+    height: 600px;
     width: 85%;
     box-shadow: 80px -30px 10px #c6c087;
+    object-fit: cover;
 }
 #aboutPanel{
     background-color: transparent !important;
@@ -291,7 +384,8 @@ a.float:hover + div.label-container{
 
   /*Menu Section*/
 #menu{
-    background-image: url("/static/img/Wine.jpg");
+    /* "/static/img/Wine.jpg" */
+    background-image: url("/static/img/LaBonta_Img_v2/Ambient_OutsideChairGray.jpeg");
     background-size: cover;
     border: none;
     background-attachment: fixed;
@@ -359,7 +453,8 @@ a.float:hover + div.label-container{
 
 /*Booking Section*/
 #booking {
-    background-image: linear-gradient(rgba(2,16,63,.65),rgba(2,16,63,.65)),url("/static/img/BackgroundImage.jpg");
+    /* "/static/img/BackgroundImage.jpg" */
+    background-image: linear-gradient(rgba(2,16,63,.65),rgba(2,16,63,.65)),url("/static/img/LaBonta_Img_v1/Apetizer_MixOnly.jpeg");
     background-size: cover;
     border: none;
     background-attachment: fixed;

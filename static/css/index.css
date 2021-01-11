@@ -102,7 +102,7 @@ a.float:hover + div.label-container{
     background-color: hsla(0,0%,100%,.97)!important;
     border-color: transparent!important;
 
-    z-index:1;
+    z-index:5;
 }
 
 
@@ -134,9 +134,9 @@ a.float:hover + div.label-container{
 }
 
 /*Section*/
-.section{
+/* .section{
     margin-bottom: 4%;
-}
+} */
 .section h1{
     font-family: 'Patua One';
     font-size: 3.4em;
@@ -152,19 +152,91 @@ a.float:hover + div.label-container{
 
 
 /*HOME Carousel CSS*/
-#homeContainer{
+/* #homeContainer{
     margin-top: 7%;
-}
+} */
 .myCarouselContainer img{
     width: 100%;
 }
-#homePanel{
+/* #homePanel{
     background-color: transparent !important;
     border-style: none;
-}
-#homeGrid{
-    
+} */
+/* #homeGrid{
+
     box-shadow: 10px 10px 5px #c3b17f, -10px -10px 10px #c3b17f;
+} */
+#myCarousel {
+    margin: 5%;
+    margin-left: 3%;
+    margin-right: 3%;
+    position: relative;
+}
+#myCarousel .carousel-control {
+    opacity: 1!important;
+}
+
+#myCarousel img{
+    height: 600px!important;
+    object-fit: cover;
+}
+#myCarousel .left , #myCarousel .right{
+    z-index: 2;
+    color: white;
+}
+
+@media only screen and (max-width: 750px) {
+    #myCarousel .left , .right{
+        display: none;
+    }
+    #aboutYear, #imgPanel{
+        display: none!important;
+    }
+    #menu{
+        padding-bottom: 5%;
+    }
+    #menuContainer{
+        margin-right:auto!important;
+    }
+}
+
+/*My Carousel Bg Opacity */
+.layer {
+    background-color: rgba(2,16,63,.65);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#centered_main_txt{
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    top: 50%
+}
+.centered_inner_txt{
+    width: 100%;
+    position: relative;
+    left: -50%;
+}
+ .centered_inner_txt h1{
+    padding: 0;
+    margin: 0;
+    font-family: GabrielaStencil;
+    font-size: 2.5em;
+    color: #fff;
+    letter-spacing: 8px;
+    line-height: 35px;
+    white-space: pre-line;
+    text-align: center;
+}
+
+#inner_image{
+    display: flex;
+    justify-content: center;
 }
 
 /*About*/
@@ -225,7 +297,7 @@ a.float:hover + div.label-container{
 }
 #downloadLinkMenu{
     margin-top: 5%;
-    margin-right: 37%;   
+    margin-right: 37%;
 }
 
 #menuPanel{
@@ -291,7 +363,7 @@ a.float:hover + div.label-container{
     display: flex;
     flex-flow: row;
     justify-content: center;
-    letter-spacing: 50px;//%
+    letter-spacing: 5%;
     width:545px;
     height: 146px;
 }
@@ -312,7 +384,7 @@ a.float:hover + div.label-container{
     color: white;
 }
 .Booking .panel-header p{
-    color: white; 
+    color: white;
 }
 
 .boxedHover{
@@ -331,7 +403,7 @@ a.float:hover + div.label-container{
 .modal-content  {
     -webkit-border-radius: 16px!important;
     -moz-border-radius: 16px!important;
-    border-radius: 16px !important; 
+    border-radius: 16px !important;
 }
 .modal-content button{
     background-color:transparent!important;
@@ -365,7 +437,7 @@ a.float:hover + div.label-container{
     text-align: center;
 }
 #myOrderModal .modal-content h1{
-    color: #c02f1d;
+    color: #C02F1D;
 }
 
 #myOrderModal {
@@ -381,7 +453,7 @@ a.float:hover + div.label-container{
    list-style: none;
 }
 #myOrderModal ul{
-    padding: 0;
+    padding: 0%;
 }
 #myOrderModal input{
     width: 100%;
@@ -392,12 +464,11 @@ a.float:hover + div.label-container{
     border:none;
 }
 
-
 /*Remove Spiner */
-#inputPhoneNo,.quantity::-webkit-inner-spin-button, 
-#inputPhoneNo,.quantity::-webkit-outer-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
+#inputPhoneNo,.quantity::-webkit-inner-spin-button,
+#inputPhoneNo,.quantity::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /*Serving Time*/
@@ -410,7 +481,7 @@ a.float:hover + div.label-container{
     width: 100%;
 }
 #servingTime div{
-    letter-spacing: 50px;//%
+    letter-spacing: 5%;
     text-align:center;
     font-variant-caps: all-petite-caps;
     font-weight: 700;
@@ -504,7 +575,7 @@ footer h2{
     #orderNowButton{
         margin-top:10%;
     }
-    
+
     #contactContainer{
         padding-top:10%;
     }
@@ -600,11 +671,11 @@ footer h2{
         visibility: visible;
     }
 
-} 
+}
 
 /* Large devices (laptops/desktops, 992px and up) */
 @media only screen and (min-width: 992px)and (max-width:1200px) {
-    
+
     .Booking{
         width:100%
     }
@@ -627,17 +698,17 @@ footer h2{
         margin-left: 1%;
     }
     div#myCarousel {
-    margin:5%;
-    margin-top:10%;
+        margin:5%;
+        margin-top:10%;
     }
     #homeGrid p{
         font-size:1.3em;
     }
 
-} 
+}
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */
-@media only screen and (min-width: 1200px) and (max-width:1919px) {
+@media only screen and (min-width: 1200px) and (max-width:1919) {
     #menuCarousel{
         width: 100%;
         height: 100%;
@@ -671,6 +742,88 @@ footer h2{
         width: 100%;
         height: 100%;
     }
-  
+
 
 }
+
+
+.totalPricePerProd{
+    display: block;
+    font-size: small;
+    color: red;
+    opacity: 0.6;
+}
+
+
+
+#checkoutModal_header h1{
+    color: crimson;
+    letter-spacing: 0.2em;
+    font-size: xx-large;
+    text-align: center;
+}
+
+.center_modal_content{
+    margin: auto;
+    width: 100%;
+    padding: 10px;
+    padding-top:0px;
+}
+#grid_Form > .form-row {
+    display: flex;
+}
+
+#checkoutModal_content{
+    border-bottom: none!important;
+    background-color: floralwhite;
+}
+#checkoutModal_content > .center_modal_content > .row{
+    padding-top:20px;
+}
+#checkoutModal_footer{
+    border-top: none!important;
+    padding-bottom:5px!important;
+}
+#NoteLabel{
+    margin-bottom: 8px;
+    padding-top:8px
+}
+
+#checkout_note {
+    text-transform: capitalize;
+    /* margin-top: 7px; */
+    padding-top: 8px;
+    padding-bottom: 8px;
+    color: #777;
+    text-align: left;
+    font-weight: 100;
+    /* margin: 0px; */
+}
+
+#pay_cashSpan{
+    font-variant-caps: all-petite-caps;
+    text-decoration: underline;
+    text-align: center;
+    font-size:0.8em;
+    color: red;
+}
+
+button#order_button{
+    background-color: black!important;
+    color: white;
+    border-style: solid!important;
+    font-size: 1.3em;
+    width: 35%;
+}
+button#placeOrder_button{
+    min-height: 45px;
+    width: 245px;
+    border-radius: 30px;
+    border: 2px solid white;
+    background-color: rgb(255, 224, 27)!important;
+    font-family: Arial, sans-serif;
+    height: 45px; font-size: 21px;
+    font-weight: 300;
+    letter-spacing: 2px;}
+
+
